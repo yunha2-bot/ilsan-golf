@@ -1,0 +1,36 @@
+# 일산골프모임 - Synology Container Manager에서 프로젝트로 불러와 빌드·실행
+#
+# 볼륨 매핑:
+#   - golf-db       → /app/data           (SQLite DB 파일: golf.db)
+#   - golf-uploads  → /app/public/uploads (갤러리·스코어카드 사진)
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: golf-app:latest
+    container_name: golf-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # DB: SQLite 파일 경로 (고정)
+      DATABASE_URL: "file:/app/data/golf.db"
+      # 사진 업로드 경로 (고정)
+      UPLOAD_DIR: "/app/public/uploads"
+    volumes:
+      # DB 저장 (file:/app/data/golf.db)
+      - golf-db:/app/data
+      # 업로드 사진 저장
+      - golf-uploads:/app/public/uploads
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  golf-db:      # /app/data 매핑 (golf.db 유지)
+  golf-uploads: # /app/public/uploads 매핑 (사진 유지)

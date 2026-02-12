@@ -1,0 +1,30 @@
+# 의존성·빌드 산출물 (이미지 안에서 다시 설치/빌드)
+node_modules
+.next
+out
+
+# 개발·테스트
+.env*
+!.env.example
+coverage
+*.log
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# IDE
+.cursor
+.vscode
+*.swp
+*.swo
+
+# 로컬 DB·업로드 (배포 시 볼륨으로 대체)
+prisma/*.db
+prisma/prisma
+public/uploads
+
+# 문서·배포 설명 (이미지에는 불필요해도 포함해도 됨)
+README.md
+DEPLOY_SYNOLOGY.md
