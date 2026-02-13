@@ -2,9 +2,6 @@
 
 import { useState } from "react";
 
-/** 내기 멤버 (김상우 제외) */
-const BETTING_MEMBER_NAMES = ["김동원", "이문림", "신윤하"] as const;
-
 export type MemberStats = {
   name: string;
   totalRounds: number;
@@ -28,6 +25,7 @@ export type CourseStats = {
 
 export function StatsView({
   byMember,
+  bettingByMember = [],
   overallCount,
   bettingRoundsCount = 0,
   bettingWinner = null,
@@ -37,6 +35,7 @@ export function StatsView({
   byCourse = [],
 }: {
   byMember: MemberStats[];
+  bettingByMember?: MemberStats[];
   overallCount: number;
   bettingRoundsCount?: number;
   bettingWinner?: string | null;
@@ -48,11 +47,11 @@ export function StatsView({
   const [showBettingOnly, setShowBettingOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"all" | number | "course">("all");
 
-  const list = showBettingOnly
-    ? byMember.filter((m) =>
-        (BETTING_MEMBER_NAMES as readonly string[]).includes(m.name),
-      )
-    : byMember;
+  const list = showBettingOnly ? bettingByMember : byMember;
+  const bettingNamesLabel =
+    bettingByMember.length > 0
+      ? bettingByMember.map((m) => m.name).join("·")
+      : "";
 
   const yearList = typeof viewMode === "number" ? byYear[viewMode] ?? [] : null;
 
@@ -152,7 +151,7 @@ export function StatsView({
                     <span>{m.name}</span>
                     <span>
                       {m.rounds > 0 && m.avg !== null
-                        ? `평균 ${m.avg.toFixed(1)} (${m.rounds}회)`
+                        ? `평균 ${Math.round(m.avg)} (${m.rounds}회)`
                         : "-"}
                     </span>
                   </div>
@@ -188,7 +187,7 @@ export function StatsView({
               <div className="text-right">
                 <p className="text-[11px] text-emerald-200/80">평균</p>
                 <p className="mt-0.5 text-sm font-semibold text-emerald-50">
-                  {m.avgAll !== null ? m.avgAll.toFixed(1) : "-"}
+                  {m.avgAll !== null ? Math.round(m.avgAll) : "-"}
                 </p>
               </div>
             </article>
@@ -204,7 +203,7 @@ export function StatsView({
           <p className="mt-1 text-[11px] text-emerald-200/85">
             {showBettingOnly
               ? bettingRoundsCount > 0
-                ? `부자되세요~ (김동원·이문림·신윤하) 세 명 모두 참여한 최근 ${bettingRoundsCount}경기 평균`
+                ? `부자되세요~${bettingNamesLabel ? ` (${bettingNamesLabel})` : ""} 세 명 모두 참여한 최근 ${bettingRoundsCount}경기 평균`
                 : "세 명 모두 참여한 라운드가 없으면 평균을 내지 않습니다."
               : "전체 기록 평균"}
           </p>
@@ -255,17 +254,17 @@ export function StatsView({
                 <>
                   <p className="text-[11px] text-emerald-200/80">최근 5경기 평균</p>
                   <p className="mt-0.5 text-sm font-semibold text-emerald-50">
-                    {m.avgRecent5 !== null ? m.avgRecent5.toFixed(1) : "-"}
+                    {m.avgRecent5 !== null ? Math.round(m.avgRecent5) : "-"}
                   </p>
                   <p className="mt-1 text-[10px] text-emerald-300/75">
-                    전체 평균 {m.avgAll !== null ? m.avgAll.toFixed(1) : "-"}
+                    전체 평균 {m.avgAll !== null ? Math.round(m.avgAll) : "-"}
                   </p>
                 </>
               ) : (
                 <>
                   <p className="text-[11px] text-emerald-200/80">전체 평균</p>
                   <p className="mt-0.5 text-sm font-semibold text-emerald-50">
-                    {m.avgAll !== null ? m.avgAll.toFixed(1) : "-"}
+                    {m.avgAll !== null ? Math.round(m.avgAll) : "-"}
                   </p>
                 </>
               )}

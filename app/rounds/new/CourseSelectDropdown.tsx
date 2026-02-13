@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { CoursePar } from "@/app/actions/courses";
 import { createCourse, deleteCourse } from "@/app/actions/courses";
@@ -36,8 +37,16 @@ export function CourseSelectDropdown({
   useEffect(() => {
     onSelectionChange?.(courses.find((c) => c.name === selectedValue) ?? null);
   }, [selectedValue, courses]);
+  // 서버 목록과 동기화하되, 이번 세션에서 추가한 코스(아직 서버 목록에 없을 수 있음)는 유지
   useEffect(() => {
-    setCourses(initialCourses);
+    setCourses((prev) => {
+      const serverIds = new Set(initialCourses.map((c) => c.id));
+      const addedThisSession = prev.filter((c) => !serverIds.has(c.id));
+      const merged = [...initialCourses, ...addedThisSession];
+      return merged.length > 0
+        ? [...merged].sort((a, b) => a.name.localeCompare(b.name))
+        : initialCourses;
+    });
   }, [initialCourses]);
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -92,6 +101,8 @@ export function CourseSelectDropdown({
       onCoursesChange?.([...courses, result.course].sort((a, b) => a.name.localeCompare(b.name)));
       onSelectionChange?.(result.course);
       setModalOpen(false);
+      // 서버에서 코스 목록 다시 불러와서 드롭다운에 새 코스가 확실히 반영되도록
+      router.refresh();
     } else {
       setError(result.error ?? "저장 실패");
     }
@@ -185,91 +196,94 @@ export function CourseSelectDropdown({
         </div>
       )}
 
-      {modalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="새 코스 추가"
-        >
-          <div className="w-full max-w-sm rounded-2xl border border-emerald-700/80 bg-emerald-950 p-4 shadow-2xl">
-            <p className="text-sm font-semibold text-emerald-50">새 코스 추가</p>
-            <p className="mt-1 text-[11px] text-emerald-200/80">
-              코스 이름과 전반(인코스)·후반(아웃코스) 홀별 파를 입력한 뒤 저장하세요.
-            </p>
-            <form onSubmit={handleAddCourse} className="mt-4 space-y-3">
-              <div>
-                <label className="text-[10px] text-emerald-300/90">코스 이름</label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="예: 남서울 CC"
-                  className="mt-1 w-full rounded-lg border border-emerald-700/80 bg-emerald-900/90 px-3 py-2 text-sm text-emerald-50 outline-none focus:border-emerald-400"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+      {modalOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="새 코스 추가"
+          >
+            <div className="w-full max-w-sm rounded-2xl border border-emerald-700/80 bg-emerald-950 p-4 shadow-2xl">
+              <p className="text-sm font-semibold text-emerald-50">새 코스 추가</p>
+              <p className="mt-1 text-[11px] text-emerald-200/80">
+                코스 이름과 전반·후반 홀별 파를 입력한 뒤 저장하세요.
+              </p>
+              <form onSubmit={handleAddCourse} className="mt-4 space-y-3">
                 <div>
-                  <p className="text-[10px] text-emerald-300/90 mb-1">전반 · 인코스 (1~9홀)</p>
-                  <div className="flex flex-wrap gap-1">
-                    {parIn.map((p, i) => (
-                      <label key={i} className="flex flex-col items-center gap-0.5">
-                        <span className="text-[9px] text-emerald-400/80">{i + 1}</span>
-                        <input
-                          type="number"
-                          min={3}
-                          max={5}
-                          value={p}
-                          onChange={(e) => handleParChange("in", i, e.target.value)}
-                          className="w-9 rounded border border-emerald-700/80 bg-emerald-900/90 px-1 py-1 text-center text-[11px] text-emerald-50 [color-scheme:dark]"
-                        />
-                      </label>
-                    ))}
+                  <label className="text-[10px] text-emerald-300/90">코스 이름</label>
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="예: 남서울 CC"
+                    className="mt-1 w-full rounded-lg border border-emerald-700/80 bg-emerald-900/90 px-3 py-2 text-sm text-emerald-50 outline-none focus:border-emerald-400"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[10px] text-emerald-300/90 mb-1">전반 (1~9홀)</p>
+                    <div className="flex flex-wrap gap-1">
+                      {parIn.map((p, i) => (
+                        <label key={i} className="flex flex-col items-center gap-0.5">
+                          <span className="text-[9px] text-emerald-400/80">{i + 1}</span>
+                          <input
+                            type="number"
+                            min={3}
+                            max={5}
+                            value={p}
+                            onChange={(e) => handleParChange("in", i, e.target.value)}
+                            className="w-9 rounded border border-emerald-700/80 bg-emerald-900/90 px-1 py-1 text-center text-[11px] text-emerald-50 [color-scheme:dark]"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-emerald-300/90 mb-1">후반 (10~18홀)</p>
+                    <div className="flex flex-wrap gap-1">
+                      {parOut.map((p, i) => (
+                        <label key={i} className="flex flex-col items-center gap-0.5">
+                          <span className="text-[9px] text-emerald-400/80">{i + 10}</span>
+                          <input
+                            type="number"
+                            min={3}
+                            max={5}
+                            value={p}
+                            onChange={(e) => handleParChange("out", i, e.target.value)}
+                            className="w-9 rounded border border-emerald-700/80 bg-emerald-900/90 px-1 py-1 text-center text-[11px] text-emerald-50 [color-scheme:dark]"
+                          />
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <p className="text-[10px] text-emerald-300/90 mb-1">후반 · 아웃코스 (10~18홀)</p>
-                  <div className="flex flex-wrap gap-1">
-                    {parOut.map((p, i) => (
-                      <label key={i} className="flex flex-col items-center gap-0.5">
-                        <span className="text-[9px] text-emerald-400/80">{i + 10}</span>
-                        <input
-                          type="number"
-                          min={3}
-                          max={5}
-                          value={p}
-                          onChange={(e) => handleParChange("out", i, e.target.value)}
-                          className="w-9 rounded border border-emerald-700/80 bg-emerald-900/90 px-1 py-1 text-center text-[11px] text-emerald-50 [color-scheme:dark]"
-                        />
-                      </label>
-                    ))}
-                  </div>
+                {error && <p className="text-[11px] text-red-400">{error}</p>}
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalOpen(false);
+                      setSelectedValue(courses[0]?.name ?? "");
+                    }}
+                    className="flex-1 rounded-xl border border-emerald-600 bg-emerald-800/80 py-2 text-xs font-medium text-emerald-100"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={pending}
+                    className="flex-1 rounded-xl bg-emerald-600 py-2 text-xs font-semibold text-emerald-950 disabled:opacity-60"
+                  >
+                    {pending ? "저장 중…" : "저장"}
+                  </button>
                 </div>
-              </div>
-              {error && <p className="text-[11px] text-red-400">{error}</p>}
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalOpen(false);
-                    setSelectedValue(courses[0]?.name ?? "");
-                  }}
-                  className="flex-1 rounded-xl border border-emerald-600 bg-emerald-800/80 py-2 text-xs font-medium text-emerald-100"
-                >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className="flex-1 rounded-xl bg-emerald-600 py-2 text-xs font-semibold text-emerald-950 disabled:opacity-60"
-                >
-                  {pending ? "저장 중…" : "저장"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              </form>
+            </div>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

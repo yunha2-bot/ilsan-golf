@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { prisma } from "@/lib/prisma";
 import { BottomNav } from "./_components/BottomNav";
+import { EnsureHomeFirst } from "./_components/EnsureHomeFirst";
 import { HeaderMembers } from "./_components/HeaderMembers";
 import { TeeOrderDice } from "./_components/TeeOrderDice";
 
@@ -28,18 +29,23 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let members = await prisma.member.findMany({ orderBy: { id: "asc" } });
-  if (members.length < 4) {
-    for (const name of DEFAULT_NAMES) {
-      await prisma.member.upsert({
-        where: { name },
-        create: { name },
-        update: {},
-      });
-    }
+  let members: { id: number; name: string }[] = [];
+  try {
     members = await prisma.member.findMany({ orderBy: { id: "asc" } });
+    if (members.length < 4) {
+      for (const name of DEFAULT_NAMES) {
+        await prisma.member.upsert({
+          where: { name },
+          create: { name },
+          update: {},
+        });
+      }
+      members = await prisma.member.findMany({ orderBy: { id: "asc" } });
+    }
+    members = members.slice(0, 4);
+  } catch {
+    members = DEFAULT_NAMES.map((name, i) => ({ id: i + 1, name }));
   }
-  members = members.slice(0, 4);
 
   return (
     <html lang="ko">
@@ -55,6 +61,7 @@ export default async function RootLayout({
               <TeeOrderDice members={members} />
               <HeaderMembers members={members} />
             </header>
+            <EnsureHomeFirst />
             <main className="flex-1 px-4 pb-20 pt-4">{children}</main>
             <BottomNav />
           </div>

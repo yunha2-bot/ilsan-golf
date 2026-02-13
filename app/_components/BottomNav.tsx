@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { setStatsChosen } from "./EnsureHomeFirst";
 
 const tabs = [
   { href: "/", label: "홈", subLabel: "최근 스코어" },
-  { href: "/stats", label: "평균", subLabel: "멤버별" },
+  { href: "/stats", label: "평균", subLabel: "멤버별", onNavigate: setStatsChosen },
   { href: "/gallery", label: "갤러리", subLabel: "추억" },
 ];
 
@@ -26,6 +27,7 @@ export function BottomNav() {
             <Link
               key={tab.href}
               href={tab.href}
+              onClick={() => tab.onNavigate?.()}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1 transition-colors",
                 active

@@ -1,6 +1,8 @@
 # ========== 1. 빌드 단계 ==========
 FROM node:20-alpine AS build
 
+RUN apk add --no-cache openssl openssl-dev
+
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
@@ -14,6 +16,8 @@ RUN npm run build
 
 # ========== 2. 실행 단계 (standalone) ==========
 FROM node:20-alpine AS run
+
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
@@ -30,5 +34,5 @@ RUN npm install prisma@5.22.0 --no-save
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# DB·업로드 디렉터리 생성 → 마이그레이션 → 서버 시작
-CMD ["sh", "-c", "mkdir -p /app/data /app/public/uploads && npx prisma migrate deploy && node server.js"]
+# 업로드 디렉터리 생성 → DB 마이그레이션(MariaDB) → 서버 시작
+CMD ["sh", "-c", "mkdir -p /app/public/uploads && npx prisma migrate deploy && node server.js"]

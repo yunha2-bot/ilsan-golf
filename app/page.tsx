@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getFileUrl } from "@/lib/uploadConfig";
 import { HomeViewportSync } from "./_components/HomeViewportSync";
 import { ScorecardButton } from "./_components/ScorecardLightbox";
 import { DeleteRoundButton } from "./_components/DeleteRoundButton";
+
+type RoundWithScores = Prisma.RoundGetPayload<{
+  include: { scores: { include: { member: true } } };
+}>;
 
 const DEFAULT_PER_PAGE = 4;
 const MIN_PER_PAGE = 2;
@@ -29,26 +34,38 @@ export default async function Home(props: {
     Math.max(MIN_PER_PAGE, Number(searchParams.perPage ?? DEFAULT_PER_PAGE) || DEFAULT_PER_PAGE),
   );
 
-  const totalRounds = await prisma.round.count();
-  const totalPages = Math.max(1, Math.ceil(totalRounds / perPage));
-  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  let totalRounds = 0;
+  let members: { id: number; name: string }[] = [];
+  let rounds: RoundWithScores[] = [];
 
-  const [members, rounds] = await Promise.all([
-    prisma.member.findMany({ orderBy: { id: "asc" } }),
-    prisma.round.findMany({
-      orderBy: { date: "desc" },
-      skip: (safePage - 1) * perPage,
-      take: perPage,
-      include: {
-        scores: {
-          include: {
-            member: true,
+  try {
+    totalRounds = await prisma.round.count();
+    const totalPages = Math.max(1, Math.ceil(totalRounds / perPage));
+    const safePage = Math.min(Math.max(1, currentPage), totalPages);
+
+    const [membersList, roundsList] = await Promise.all([
+      prisma.member.findMany({ orderBy: { id: "asc" } }),
+      prisma.round.findMany({
+        orderBy: { date: "desc" },
+        skip: (safePage - 1) * perPage,
+        take: perPage,
+        include: {
+          scores: {
+            include: {
+              member: true,
+            },
           },
         },
-      },
-    }),
-  ]);
+      }),
+    ]);
+    members = membersList.slice(0, 4);
+    rounds = roundsList;
+  } catch {
+    // DB 연결 실패 시 빈 목록으로 표시
+  }
 
+  const totalPages = Math.max(1, Math.ceil(totalRounds / perPage));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
   const memberOrder = members.slice(0, 4).map((m) => m.id);
 
   return (

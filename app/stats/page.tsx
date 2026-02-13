@@ -2,8 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { StatsView } from "./StatsView";
 
 const RECENT_ROUNDS = 5;
-/** 부자되세요~ 5경기 평균에 쓸 멤버 (셋 다 포함된 라운드만 카운트) */
-const BETTING_MEMBER_NAMES = ["김동원", "이문림", "신윤하"] as const;
+/** 부자되세요~: 첫 4명 중 이 인덱스(0-based)만 제외한 3명 (이름 변경해도 유지) */
+const BETTING_EXCLUDED_INDEX = 1;
 
 export const revalidate = 0;
 
@@ -19,11 +19,8 @@ export default async function StatsPage() {
   ]);
 
   const memberList = members.slice(0, 4);
-  const bettingMemberIds = new Set(
-    memberList
-      .filter((m) => (BETTING_MEMBER_NAMES as readonly string[]).includes(m.name))
-      .map((m) => m.id),
-  );
+  const bettingMembers = memberList.filter((_, i) => i !== BETTING_EXCLUDED_INDEX);
+  const bettingMemberIds = new Set(bettingMembers.map((m) => m.id));
 
   // 세 명이 모두 참여한 라운드만 모아서, 최근 5경기 선정 (날짜 최신순)
   const roundIdsByDate = new Map<number, Date>();
@@ -52,8 +49,7 @@ export default async function StatsPage() {
       .map(([id]) => id);
     const [newRoundId, ...baselineRoundIds] = roundIds;
     const improvements: { name: string; improvement: number }[] = [];
-    for (const member of memberList) {
-      if (!bettingMemberIds.has(member.id)) continue;
+    for (const member of members.filter((m) => bettingMemberIds.has(m.id))) {
       const baselineScores = scores.filter(
         (s) =>
           s.memberId === member.id && baselineRoundIds.includes(s.roundId),
@@ -125,6 +121,10 @@ export default async function StatsPage() {
     };
   });
 
+  const bettingByMember = bettingMembers.map(
+    (m) => byMember.find((b) => b.name === m.name)!,
+  );
+
   // 연도별: 2025 ~ 현재 연도까지 오름차순. 년도가 바뀌면 새 연도 버튼 자동 추가
   const currentYear = new Date().getFullYear();
   const years = Array.from(
@@ -179,6 +179,7 @@ export default async function StatsPage() {
   return (
     <StatsView
       byMember={byMember}
+      bettingByMember={bettingByMember}
       overallCount={scores.length}
       bettingRoundsCount={roundsWithAllThree.length}
       bettingWinner={bettingWinner}

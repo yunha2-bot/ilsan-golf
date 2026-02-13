@@ -94,7 +94,7 @@ export function CourseSelectWithPar({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] text-emerald-300/80 mb-1.5">
-                전반 · 인코스 (1~9홀)
+                전반 (1~9홀)
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {parIn.map((p, i) => (
@@ -119,7 +119,7 @@ export function CourseSelectWithPar({
             </div>
             <div>
               <p className="text-[10px] text-emerald-300/80 mb-1.5">
-                후반 · 아웃코스 (10~18홀)
+                후반 (10~18홀)
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {parOut.map((p, i) => (

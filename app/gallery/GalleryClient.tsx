@@ -20,6 +20,7 @@ export function GalleryClient({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const goPrev = useCallback(() => {
     if (lightboxIndex === null) return;
@@ -68,6 +69,36 @@ export function GalleryClient({
       setUploadError(err instanceof Error ? err.message : "업로드 중 오류");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, itemId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (deletingId !== null) return;
+    setDeletingId(itemId);
+    try {
+      const res = await fetch(`/api/gallery/${itemId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || "삭제 실패");
+      }
+      setItems((prev) => {
+        const next = prev.filter((i) => i.id !== itemId);
+        return next;
+      });
+      if (lightboxIndex !== null) {
+        const idx = items.findIndex((i) => i.id === itemId);
+        if (idx === lightboxIndex) {
+          setLightboxIndex(null);
+        } else if (idx < lightboxIndex) {
+          setLightboxIndex(lightboxIndex - 1);
+        }
+      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "삭제 중 오류");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -138,30 +169,43 @@ export function GalleryClient({
           <ul className="grid grid-cols-2 gap-3">
             {items.map((item, index) => (
               <li key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => setLightboxIndex(index)}
-                  className="w-full text-left rounded-2xl border border-emerald-800/70 overflow-hidden bg-emerald-950/80 shadow-md hover:border-emerald-600/80 transition"
-                >
-                  <div className="aspect-square relative bg-emerald-900/60">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.imageUrl}
-                      alt={item.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="p-2.5">
-                    <p className="text-xs font-semibold text-emerald-50 truncate">
-                      {item.title}
-                    </p>
-                    {item.description && (
-                      <p className="mt-0.5 text-[10px] text-emerald-200/80 line-clamp-2">
-                        {item.description}
+                <div className="relative w-full rounded-2xl border border-emerald-800/70 overflow-hidden bg-emerald-950/80 shadow-md hover:border-emerald-600/80 transition">
+                  <button
+                    type="button"
+                    onClick={(e) => handleDelete(e, item.id)}
+                    disabled={deletingId === item.id}
+                    className="absolute top-1.5 right-1.5 z-10 rounded-full bg-black/60 p-1.5 text-white hover:bg-red-600/90 disabled:opacity-50"
+                    aria-label="사진 삭제"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLightboxIndex(index)}
+                    className="w-full text-left"
+                  >
+                    <div className="aspect-square relative bg-emerald-900/60">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.imageUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="p-2.5">
+                      <p className="text-xs font-semibold text-emerald-50 truncate">
+                        {item.title}
                       </p>
-                    )}
-                  </div>
-                </button>
+                      {item.description && (
+                        <p className="mt-0.5 text-[10px] text-emerald-200/80 line-clamp-2">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -197,16 +241,29 @@ export function GalleryClient({
               <p className="mt-1 text-xs text-white/80">{current.description}</p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setLightboxIndex(null)}
-            className="absolute top-3 right-3 z-20 rounded-full bg-white/20 p-2 text-white hover:bg-white/30"
-            aria-label="닫기"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="absolute top-3 right-3 z-20 flex gap-2">
+            <button
+              type="button"
+              onClick={(e) => current && handleDelete(e, current.id)}
+              disabled={current ? deletingId === current.id : true}
+              className="rounded-full bg-red-600/80 p-2 text-white hover:bg-red-500 disabled:opacity-50"
+              aria-label="사진 삭제"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(null)}
+              className="rounded-full bg-white/20 p-2 text-white hover:bg-white/30"
+              aria-label="닫기"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
           {items.length > 1 && (
             <>
               <button

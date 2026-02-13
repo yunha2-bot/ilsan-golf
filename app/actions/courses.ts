@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { unstable_noStore } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 export type CoursePar = {
@@ -26,6 +28,7 @@ export type CoursePar = {
 };
 
 export async function getCourses(): Promise<CoursePar[]> {
+  unstable_noStore();
   const list = await prisma.course.findMany({
     orderBy: { name: "asc" },
   });
@@ -105,6 +108,8 @@ export async function createCourse(formData: FormData): Promise<
     par10: created.par10, par11: created.par11, par12: created.par12, par13: created.par13, par14: created.par14,
     par15: created.par15, par16: created.par16, par17: created.par17, par18: created.par18,
   };
+  revalidatePath("/rounds/new");
+  revalidatePath("/rounds/[id]/edit", "page");
   return { ok: true, course };
 }
 
