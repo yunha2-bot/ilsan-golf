@@ -66,13 +66,13 @@ export function HeaderMembers({ members }: { members: Member[] }) {
           aria-label="이름 변경"
         >
           <div className="w-full max-w-sm rounded-2xl border border-emerald-800/80 bg-emerald-950 p-4 shadow-xl">
-            <p className="text-[11px] text-emerald-300/90">이름 변경</p>
-            <form onSubmit={handleSubmit} className="mt-3 space-y-3">
+            <p className="text-sm font-semibold text-emerald-50">이름 변경</p>
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <input
                 type="text"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                className="w-full rounded-lg border border-emerald-700/80 bg-emerald-950/90 px-3 py-2 text-sm text-emerald-50 outline-none focus:border-emerald-400"
+                className="w-full rounded-lg border border-emerald-700/80 bg-emerald-950/90 px-3 py-2.5 text-xs text-emerald-50 outline-none focus:border-emerald-400"
                 placeholder="이름"
                 autoFocus
               />
@@ -83,13 +83,13 @@ export function HeaderMembers({ members }: { members: Member[] }) {
                 <button
                   type="button"
                   onClick={closeEdit}
-                  className="flex-1 rounded-lg border border-emerald-700/80 px-3 py-2 text-[12px] text-emerald-200 hover:bg-emerald-900/80"
+                  className="flex-1 rounded-lg border border-emerald-700/80 px-3 py-2 text-xs text-emerald-200 hover:bg-emerald-900/80"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-[12px] font-medium text-emerald-950 hover:bg-emerald-500"
+                  className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-emerald-950 hover:bg-emerald-500"
                 >
                   저장
                 </button>

@@ -68,7 +68,7 @@ export function StatsView({
       </div>
       {/* 부자되세요~ (전체일 때만 버튼, 연도 선택 시 텍스트만) + 연도 탭 */}
       <section className="rounded-2xl border border-emerald-800/60 bg-emerald-950/60 px-4 py-3 shadow-lg shadow-emerald-950/60">
-        <div className="mb-2">
+        <div className="space-y-2">
           {viewMode === "all" ? (
             <button
               type="button"
@@ -84,8 +84,7 @@ export function StatsView({
               부자되세요~
             </span>
           )}
-        </div>
-        <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setViewMode("all")}
@@ -122,6 +121,7 @@ export function StatsView({
           >
             코스별
           </button>
+          </div>
         </div>
       </section>
 
@@ -196,18 +196,16 @@ export function StatsView({
       ) : (
         <>
       <section className="rounded-2xl border border-emerald-800/60 bg-emerald-950/60 px-4 py-3 shadow-lg shadow-emerald-950/60">
-        <div>
-          <p className="text-sm font-semibold text-emerald-50">
-            멤버별 평균 스코어
-          </p>
-          <p className="mt-1 text-[11px] text-emerald-200/85">
+        <p className="text-sm font-semibold text-emerald-50">
+          멤버별 평균 스코어
+        </p>
+        <p className="mt-1 text-[11px] text-emerald-200/85">
             {showBettingOnly
               ? bettingRoundsCount > 0
                 ? `부자되세요~${bettingNamesLabel ? ` (${bettingNamesLabel})` : ""} 세 명 모두 참여한 최근 ${bettingRoundsCount}경기 평균`
                 : "세 명 모두 참여한 라운드가 없으면 평균을 내지 않습니다."
               : "전체 기록 평균"}
-          </p>
-        </div>
+        </p>
         {overallCount === 0 && (
           <p className="mt-2 text-[11px] text-emerald-200/80">
             아직 기록된 스코어가 없어 평균을 계산할 수 없습니다.

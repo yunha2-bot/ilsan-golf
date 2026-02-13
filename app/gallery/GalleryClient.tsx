@@ -117,29 +117,29 @@ export function GalleryClient({
 
       <form
         onSubmit={handleUpload}
-        className="rounded-2xl border border-emerald-800/70 bg-emerald-950/50 px-4 py-3 space-y-3"
+        className="rounded-2xl border border-emerald-800/70 bg-emerald-950/50 px-4 py-3 space-y-4"
       >
-        <p className="text-[11px] font-medium text-emerald-200/90">새 사진 올리기</p>
-        <div>
-          <label className="block text-[10px] text-emerald-300/80 mb-1">제목</label>
+        <p className="text-sm font-semibold text-emerald-50">새 사진 올리기</p>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-medium text-emerald-100/90">제목</label>
           <input
             name="title"
             type="text"
             placeholder="예: 1홀 티샷"
-            className="w-full rounded-lg border border-emerald-700/80 bg-emerald-950/90 px-3 py-2 text-xs text-emerald-50 placeholder:text-emerald-400/50 focus:border-emerald-400 outline-none"
+            className="w-full rounded-lg border border-emerald-700/80 bg-emerald-950/90 px-3 py-2.5 text-xs text-emerald-50 placeholder:text-emerald-400/50 focus:border-emerald-400 outline-none"
           />
         </div>
-        <div>
-          <label className="block text-[10px] text-emerald-300/80 mb-1">간단한 내용 (선택)</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-medium text-emerald-100/90">간단한 내용 (선택)</label>
           <textarea
             name="description"
             rows={2}
             placeholder="예: 오늘 첫 홀 드라이버"
-            className="w-full rounded-lg border border-emerald-700/80 bg-emerald-950/90 px-3 py-2 text-xs text-emerald-50 placeholder:text-emerald-400/50 focus:border-emerald-400 outline-none resize-none"
+            className="w-full rounded-lg border border-emerald-700/80 bg-emerald-950/90 px-3 py-2.5 text-xs text-emerald-50 placeholder:text-emerald-400/50 focus:border-emerald-400 outline-none resize-none"
           />
         </div>
-        <div>
-          <label className="block text-[10px] text-emerald-300/80 mb-1">이미지 (JPEG, PNG, GIF, WebP, 10MB 이하)</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-medium text-emerald-100/90">이미지 (JPEG, PNG, GIF, WebP, 10MB 이하)</label>
           <input
             name="file"
             type="file"
@@ -159,11 +159,11 @@ export function GalleryClient({
         </button>
       </form>
 
-      <section>
-        <p className="mb-2 text-[11px] text-emerald-200/80">썸네일을 누르면 크게 보기</p>
+      <section className="space-y-2">
+        <p className="text-[11px] text-emerald-200/85">썸네일을 누르면 크게 보기</p>
         {items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-emerald-700/70 bg-emerald-950/40 px-4 py-10 text-center">
-            <p className="text-sm text-emerald-100/90">아직 올린 사진이 없습니다.</p>
+            <p className="text-sm font-semibold text-emerald-100/90">아직 올린 사진이 없습니다.</p>
           </div>
         ) : (
           <ul className="grid grid-cols-2 gap-3">
@@ -199,7 +199,7 @@ export function GalleryClient({
                         {item.title}
                       </p>
                       {item.description && (
-                        <p className="mt-0.5 text-[10px] text-emerald-200/80 line-clamp-2">
+                        <p className="mt-1 text-[11px] text-emerald-200/80 line-clamp-2">
                           {item.description}
                         </p>
                       )}
@@ -238,7 +238,7 @@ export function GalleryClient({
           <div className="flex-shrink-0 px-4 pb-6 pt-2 text-center relative z-10">
             <p className="text-sm font-semibold text-white">{current.title}</p>
             {current.description && (
-              <p className="mt-1 text-xs text-white/80">{current.description}</p>
+              <p className="mt-1 text-[11px] text-white/80">{current.description}</p>
             )}
           </div>
           <div className="absolute top-3 right-3 z-20 flex gap-2">

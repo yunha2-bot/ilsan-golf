@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { CoursePar } from "@/app/actions/courses";
@@ -27,16 +27,30 @@ export function CourseSelectDropdown({
   const [selectedValue, setSelectedValue] = useState(defaultValue || (initialCourses[0]?.name ?? ""));
   const [modalOpen, setModalOpen] = useState(false);
   const [listModalOpen, setListModalOpen] = useState(false);
+  const [selectOpen, setSelectOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [parIn, setParIn] = useState<number[]>(() => Array(9).fill(DEFAULT_PAR));
   const [parOut, setParOut] = useState<number[]>(() => Array(9).fill(DEFAULT_PAR));
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
+  const selectRef = useRef<HTMLDivElement>(null);
   const selectedCourse = courses.find((c) => c.name === selectedValue) ?? null;
   useEffect(() => {
     onSelectionChange?.(courses.find((c) => c.name === selectedValue) ?? null);
   }, [selectedValue, courses]);
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(e.target as Node)) {
+        setSelectOpen(false);
+      }
+    };
+    if (selectOpen) {
+      document.addEventListener("click", close);
+      return () => document.removeEventListener("click", close);
+    }
+  }, [selectOpen]);
   // 서버 목록과 동기화하되, 이번 세션에서 추가한 코스(아직 서버 목록에 없을 수 있음)는 유지
   useEffect(() => {
     setCourses((prev) => {
@@ -49,18 +63,19 @@ export function CourseSelectDropdown({
     });
   }, [initialCourses]);
 
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const v = e.target.value;
+  const handleSelectValue = (v: string) => {
     if (v === NEW_COURSE_VALUE) {
       setModalOpen(true);
       setNewName("");
       setParIn(Array(9).fill(DEFAULT_PAR));
       setParOut(Array(9).fill(DEFAULT_PAR));
       setError("");
+      setSelectOpen(false);
     } else {
       setSelectedValue(v);
       const c = courses.find((x) => x.name === v) ?? null;
       onSelectionChange?.(c);
+      setSelectOpen(false);
     }
   };
 
@@ -123,29 +138,53 @@ export function CourseSelectDropdown({
 
   return (
     <>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1" ref={selectRef}>
         <button
           type="button"
           onClick={() => setListModalOpen(true)}
-          className="text-[11px] text-emerald-100/85 text-left hover:text-emerald-50 hover:underline"
+          className="text-[11px] font-medium text-emerald-100/90 text-left hover:text-emerald-50 hover:underline"
         >
           코스(경기장)
         </button>
-        <select
-          id="course-select"
-          name="course"
-          value={selectedValue}
-          onChange={handleSelectChange}
-          className="w-full rounded-lg border border-emerald-800/70 bg-emerald-950/90 px-3 py-2 text-xs text-emerald-50 outline-none focus:border-emerald-400 [color-scheme:dark]"
-        >
-          <option value="">선택하세요</option>
-          {courses.map((c) => (
-            <option key={c.id} value={c.name}>
-              {c.name}
-            </option>
-          ))}
-          <option value={NEW_COURSE_VALUE}>➕ 새 코스 추가</option>
-        </select>
+        <input type="hidden" name="course" value={selectedValue} />
+        <div className="relative">
+          <button
+            type="button"
+            id="course-select"
+            onClick={() => setSelectOpen((o) => !o)}
+            className="w-full rounded-lg border border-emerald-800/70 bg-emerald-950/90 px-3 py-2.5 text-left text-xs text-emerald-50 outline-none focus:border-emerald-400 [color-scheme:dark]"
+          >
+            {selectedValue || "선택하세요"}
+          </button>
+          {selectOpen && (
+            <ul
+              className="absolute left-0 right-0 top-full z-10 mt-1 max-h-[12rem] overflow-y-auto overflow-x-hidden rounded-lg border border-emerald-700/80 bg-emerald-950 py-1 shadow-xl"
+              role="listbox"
+              aria-label="코스 선택"
+            >
+              {courses.map((c) => (
+                <li key={c.id} role="option">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectValue(c.name)}
+                    className="w-full px-3 py-2.5 text-left text-xs text-emerald-50 hover:bg-emerald-800/80"
+                  >
+                    {c.name}
+                  </button>
+                </li>
+              ))}
+              <li role="option">
+                <button
+                  type="button"
+                  onClick={() => handleSelectValue(NEW_COURSE_VALUE)}
+                  className="w-full px-3 py-2.5 text-left text-xs text-emerald-300 hover:bg-emerald-800/80"
+                >
+                  ➕ 새 코스 추가
+                </button>
+              </li>
+            </ul>
+          )}
+        </div>
       </div>
 
       {listModalOpen && (
@@ -157,10 +196,10 @@ export function CourseSelectDropdown({
         >
           <div className="w-full max-w-sm rounded-2xl border border-emerald-700/80 bg-emerald-950 p-4 shadow-2xl">
             <p className="text-sm font-semibold text-emerald-50">등록된 경기장</p>
-            <p className="mt-1 text-[11px] text-emerald-200/80">
+            <p className="mt-1 text-[11px] text-emerald-200/85">
               삭제 시 목록에서만 제거됩니다. 이미 기록된 라운드는 그대로 유지됩니다.
             </p>
-            <ul className="mt-3 max-h-64 space-y-1.5 overflow-y-auto">
+            <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto">
               {courses.length === 0 ? (
                 <li className="py-4 text-center text-[11px] text-emerald-300/80">
                   등록된 경기장이 없습니다.
@@ -171,11 +210,11 @@ export function CourseSelectDropdown({
                     key={c.id}
                     className="flex items-center justify-between rounded-lg border border-emerald-800/70 bg-emerald-900/50 px-3 py-2"
                   >
-                    <span className="text-[12px] text-emerald-50">{c.name}</span>
+                    <span className="text-xs text-emerald-50">{c.name}</span>
                     <button
                       type="button"
                       onClick={() => handleDeleteCourse(c.id, c.name)}
-                      className="rounded-lg border border-red-800/80 bg-red-950/80 px-2 py-1 text-[10px] font-medium text-red-200 hover:bg-red-900/80"
+                      className="rounded-lg border border-red-800/80 bg-red-950/80 px-2.5 py-1.5 text-[11px] font-medium text-red-200 hover:bg-red-900/80"
                     >
                       삭제
                     </button>
@@ -207,52 +246,52 @@ export function CourseSelectDropdown({
           >
             <div className="w-full max-w-sm rounded-2xl border border-emerald-700/80 bg-emerald-950 p-4 shadow-2xl">
               <p className="text-sm font-semibold text-emerald-50">새 코스 추가</p>
-              <p className="mt-1 text-[11px] text-emerald-200/80">
+              <p className="mt-1 text-[11px] text-emerald-200/85">
                 코스 이름과 전반·후반 홀별 파를 입력한 뒤 저장하세요.
               </p>
-              <form onSubmit={handleAddCourse} className="mt-4 space-y-3">
-                <div>
-                  <label className="text-[10px] text-emerald-300/90">코스 이름</label>
+              <form onSubmit={handleAddCourse} className="mt-4 space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-medium text-emerald-100/90">코스 이름</label>
                   <input
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="예: 남서울 CC"
-                    className="mt-1 w-full rounded-lg border border-emerald-700/80 bg-emerald-900/90 px-3 py-2 text-sm text-emerald-50 outline-none focus:border-emerald-400"
+                    className="w-full rounded-lg border border-emerald-700/80 bg-emerald-900/90 px-3 py-2.5 text-xs text-emerald-50 outline-none focus:border-emerald-400"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-[10px] text-emerald-300/90 mb-1">전반 (1~9홀)</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[11px] font-medium text-emerald-100/90">전반 (1~9홀)</p>
                     <div className="flex flex-wrap gap-1">
                       {parIn.map((p, i) => (
                         <label key={i} className="flex flex-col items-center gap-0.5">
-                          <span className="text-[9px] text-emerald-400/80">{i + 1}</span>
+                          <span className="text-[10px] text-emerald-400/80">{i + 1}</span>
                           <input
                             type="number"
                             min={3}
                             max={5}
                             value={p}
                             onChange={(e) => handleParChange("in", i, e.target.value)}
-                            className="w-9 rounded border border-emerald-700/80 bg-emerald-900/90 px-1 py-1 text-center text-[11px] text-emerald-50 [color-scheme:dark]"
+                            className="w-9 rounded border border-emerald-700/80 bg-emerald-900/90 px-1 py-1.5 text-center text-[11px] text-emerald-50 [color-scheme:dark]"
                           />
                         </label>
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-emerald-300/90 mb-1">후반 (10~18홀)</p>
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[11px] font-medium text-emerald-100/90">후반 (10~18홀)</p>
                     <div className="flex flex-wrap gap-1">
                       {parOut.map((p, i) => (
                         <label key={i} className="flex flex-col items-center gap-0.5">
-                          <span className="text-[9px] text-emerald-400/80">{i + 10}</span>
+                          <span className="text-[10px] text-emerald-400/80">{i + 10}</span>
                           <input
                             type="number"
                             min={3}
                             max={5}
                             value={p}
                             onChange={(e) => handleParChange("out", i, e.target.value)}
-                            className="w-9 rounded border border-emerald-700/80 bg-emerald-900/90 px-1 py-1 text-center text-[11px] text-emerald-50 [color-scheme:dark]"
+                            className="w-9 rounded border border-emerald-700/80 bg-emerald-900/90 px-1 py-1.5 text-center text-[11px] text-emerald-50 [color-scheme:dark]"
                           />
                         </label>
                       ))}

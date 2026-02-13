@@ -99,7 +99,7 @@ export function ScoreInputTable({ members, initialScores, coursePar }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-1">
-        <span className="text-[9px] text-emerald-100/80">
+        <span className="text-[11px] text-emerald-200/85">
           멤버를 클릭한 뒤, 아래 입력창에 1홀~18홀 순서로 숫자만 입력하세요.
         </span>
         <div className="flex flex-wrap gap-1.5">
@@ -127,23 +127,24 @@ export function ScoreInputTable({ members, initialScores, coursePar }: Props) {
 
       {activeMemberIndex !== null && (
         <div className="rounded-2xl border border-emerald-800/70 bg-emerald-950/80 p-3">
-          <p className="mb-0.5 text-[11px] font-medium text-emerald-50">
+          <p className="text-sm font-semibold text-emerald-50">
             {members[activeMemberIndex].name}
           </p>
-          <p className="mb-1.5 text-[10px] text-emerald-200/90">
+          <p className="mt-1 text-[11px] text-emerald-200/85">
             1홀→18홀 순서로 입력 (0=파, 1~9=+1~+9, b=버디 -1, e=이글 -2)
           </p>
           <input
             type="text"
-            inputMode="numeric"
+            inputMode="text"
+            autoCapitalize="none"
             autoComplete="off"
             value={lineDraft}
             onChange={handleLineChange}
             placeholder="예: 322312210223002201"
             maxLength={18}
-            className="w-full rounded-lg border border-emerald-600/80 bg-emerald-950/90 px-3 py-2.5 font-mono text-sm tracking-widest text-emerald-50 placeholder:text-emerald-400/50 focus:border-emerald-400 focus:outline-none"
+            className="mt-2 w-full rounded-lg border border-emerald-600/80 bg-emerald-950/90 px-3 py-2.5 font-mono text-xs tracking-widest text-emerald-50 placeholder:text-emerald-400/50 focus:border-emerald-400 focus:outline-none"
           />
-          <p className="mt-1 text-[10px] text-emerald-300/80">
+          <p className="mt-1.5 text-[11px] text-emerald-300/80">
             {lineDraft.length}/18자 · 총점 {totalsByMember[activeMemberIndex]}
           </p>
         </div>
@@ -166,13 +167,13 @@ export function ScoreInputTable({ members, initialScores, coursePar }: Props) {
         <table className="min-w-full border-collapse text-center text-[11px] text-emerald-50">
           <thead className="bg-emerald-900/90">
             <tr>
-              <th className="px-2 py-2 text-left text-[10px] font-medium text-emerald-100/90">
+              <th className="px-2 py-2 text-left text-[11px] font-medium text-emerald-100/90">
                 홀 / PAR
               </th>
               {members.map((m) => (
                 <th
                   key={m.id}
-                  className="px-2 py-2 text-[10px] font-medium text-emerald-100/90"
+                  className="px-2 py-2 text-[11px] font-medium text-emerald-100/90"
                 >
                   {m.name}
                 </th>
@@ -190,7 +191,7 @@ export function ScoreInputTable({ members, initialScores, coursePar }: Props) {
                 <td className="px-2 py-1.5 text-left text-[11px] text-emerald-100">
                   <span>{holeIdx + 1}홀</span>
                   {coursePar && (
-                    <span className="ml-1 text-[10px] text-emerald-300/90">
+                    <span className="ml-1 text-[11px] text-emerald-300/90">
                       PAR {coursePar[holeIdx]}
                     </span>
                   )}
@@ -200,7 +201,7 @@ export function ScoreInputTable({ members, initialScores, coursePar }: Props) {
                   return (
                     <td
                       key={memberIdx}
-                      className="px-2 py-1.5 text-center text-[11px] text-emerald-50"
+                      className="px-2 py-1.5 text-center text-xs text-emerald-50"
                     >
                       {val === 0 ? "−" : val}
                     </td>
@@ -217,7 +218,7 @@ export function ScoreInputTable({ members, initialScores, coursePar }: Props) {
               {members.map((m, idx) => (
                 <td
                   key={m.id}
-                  className="px-2 py-2 text-center text-xs font-semibold text-emerald-50"
+                  className="px-2 py-2 text-center text-[11px] font-semibold text-emerald-50"
                 >
                   {totalsByMember[idx]}
                 </td>

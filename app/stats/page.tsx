@@ -121,9 +121,27 @@ export default async function StatsPage() {
     };
   });
 
-  const bettingByMember = bettingMembers.map(
-    (m) => byMember.find((b) => b.name === m.name)!,
+  const allRoundIdsWithThree = new Set(
+    allRoundsWithAllThree.map(([id]) => id),
   );
+  const bettingByMember = bettingMembers.map((member) => {
+    const base = byMember.find((b) => b.name === member.name)!;
+    const scoresInBettingRounds = scores.filter(
+      (s) =>
+        s.memberId === member.id && allRoundIdsWithThree.has(s.roundId),
+    );
+    const bestStrokesInBetting =
+      scoresInBettingRounds.length > 0
+        ? Math.min(...scoresInBettingRounds.map((s) => s.strokes))
+        : null;
+    return {
+      name: base.name,
+      totalRounds: allRoundsWithAllThree.length,
+      avgRecent5: base.avgRecent5,
+      avgAll: base.avgAll,
+      bestStrokes: bestStrokesInBetting,
+    };
+  });
 
   // 연도별: 2025 ~ 현재 연도까지 오름차순. 년도가 바뀌면 새 연도 버튼 자동 추가
   const currentYear = new Date().getFullYear();

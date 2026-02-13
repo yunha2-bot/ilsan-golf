@@ -35,7 +35,7 @@ body {
   font-size: var(--text-body);
 }
 
-/* 공통 레이아웃: 섹션 카드 */
+/* 공통 레이아웃: 섹션 카드 (글자/줄바꿈 통일용) */
 .section-card {
   border-radius: 1rem;
   border: 1px solid rgb(6 95 70 / 0.6);
@@ -43,6 +43,11 @@ body {
   padding: 0.75rem 1rem;
   box-shadow: 0 10px 15px -3px rgb(2 44 34 / 0.6);
 }
+
+/* 타입/간격 규칙: caption 10px, label 11px, body 12px, title 14px */
+.section-title { font-size: 0.875rem; font-weight: 600; color: rgb(236 253 245); }
+.section-desc { margin-top: 0.25rem; font-size: 0.6875rem; color: rgb(167 243 208 / 0.85); }
+.card-meta { font-size: 0.6875rem; color: rgb(167 243 208 / 0.8); }
 
 /* 공통: 라벨 */
 .label {

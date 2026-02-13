@@ -36,11 +36,11 @@ export function LoginForm() {
   }
 
   return (
-    <div className="mx-auto max-w-xs pt-8">
-      <p className="text-center text-xs text-emerald-200/90">
+    <div className="mx-auto max-w-xs space-y-4 pt-8">
+      <p className="text-center text-[11px] text-emerald-200/90">
         접속하려면 비밀번호를 입력하세요.
       </p>
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="password"
           value={password}

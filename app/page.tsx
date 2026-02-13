@@ -81,16 +81,16 @@ export default async function Home(props: {
         스코어 입력하기
       </Link>
       <section className="rounded-2xl border border-emerald-800/60 bg-emerald-950/60 px-4 py-3 shadow-lg shadow-emerald-950/60">
-        <p className="text-xs font-medium text-emerald-100/90">총 {totalRounds} 라운드 기록</p>
+        <p className="text-[11px] font-medium text-emerald-100/90">총 {totalRounds} 라운드 기록</p>
       </section>
 
       <section className="space-y-3">
         {rounds.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-emerald-700/70 bg-emerald-950/40 px-4 py-10 text-center">
-            <p className="text-sm font-semibold text-emerald-100">
+            <p className="text-sm font-semibold text-emerald-50">
               아직 기록된 라운드가 없습니다.
             </p>
-            <p className="text-[11px] text-emerald-200/80">
+            <p className="mt-1 text-[11px] text-emerald-200/85">
               첫 라운드를 기록하면 이곳에 스코어 카드가 나타납니다.
             </p>
           </div>
