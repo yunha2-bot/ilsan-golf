@@ -78,11 +78,12 @@ model Score {
   roundId  Int
 }
 
-// 갤러리 사진: 제목·설명 + 파일 경로(상대). 실제 파일은 UPLOAD_DIR 또는 public/uploads에 저장
+// 갤러리 사진: 제목·설명·태그 + 파일 경로(상대). 태그는 쉼표 구분(예: "2025,남서울CC")
 model GalleryItem {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
+  tags        String   @default("") // 쉼표 구분 태그. 앨범/필터용
   filePath    String   // 저장 경로 상대값 (예: 2025/02/11/abc.jpg) → URL은 uploadConfig 기준
   createdAt   DateTime @default(now())
 }

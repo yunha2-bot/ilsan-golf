@@ -2,8 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { StatsView } from "./StatsView";
 
 const RECENT_ROUNDS = 5;
-/** 부자되세요~: 첫 4명 중 이 인덱스(0-based)만 제외한 3명 (이름 변경해도 유지) */
-const BETTING_EXCLUDED_INDEX = 1;
+/** 부자되세요~: 이 이름의 멤버만 제외한 3명 (나머지가 참가 대상). 이름으로 지정해 DB 순서와 무관하게 동작 */
+const BETTING_EXCLUDED_NAME = "김상우";
 
 export const revalidate = 0;
 
@@ -19,7 +19,7 @@ export default async function StatsPage() {
   ]);
 
   const memberList = members.slice(0, 4);
-  const bettingMembers = memberList.filter((_, i) => i !== BETTING_EXCLUDED_INDEX);
+  const bettingMembers = memberList.filter((m) => m.name !== BETTING_EXCLUDED_NAME);
   const bettingMemberIds = new Set(bettingMembers.map((m) => m.id));
 
   // 세 명이 모두 참여한 라운드만 모아서, 최근 5경기 선정 (날짜 최신순)
@@ -73,6 +73,7 @@ export default async function StatsPage() {
 
   let bettingWinner: string | null = null;
   let bettingStreak = 0;
+  let bettingLatestLowest: string | null = null; // 평균 대비 우승 없을 때 이번 경기 최저 타수 1등
   if (allRoundsWithAllThree.length >= 6) {
     const winners: (string | null)[] = [];
     for (let i = 0; i + 6 <= allRoundsWithAllThree.length; i++) {
@@ -86,6 +87,19 @@ export default async function StatsPage() {
         else break;
       }
       bettingStreak = count;
+    }
+  }
+  // 평균 대비 우승자가 없을 때: 이번 경기(가장 최근) 최저 타수인 사람을 이번 경기 1등으로 표시
+  if (!bettingWinner && allRoundsWithAllThree.length >= 1) {
+    const [latestRoundId] = allRoundsWithAllThree[0];
+    const scoresInLatest = scores.filter(
+      (s) => s.roundId === latestRoundId && bettingMemberIds.has(s.memberId),
+    );
+    if (scoresInLatest.length > 0) {
+      const lowest = scoresInLatest.reduce((a, b) =>
+        a.strokes <= b.strokes ? a : b,
+      );
+      bettingLatestLowest = lowest.member.name;
     }
   }
 
@@ -113,6 +127,7 @@ export default async function StatsPage() {
         : null;
 
     return {
+      id: member.id,
       name: member.name,
       totalRounds,
       avgRecent5,
@@ -135,6 +150,7 @@ export default async function StatsPage() {
         ? Math.min(...scoresInBettingRounds.map((s) => s.strokes))
         : null;
     return {
+      id: member.id,
       name: base.name,
       totalRounds: allRoundsWithAllThree.length,
       avgRecent5: base.avgRecent5,
@@ -150,7 +166,7 @@ export default async function StatsPage() {
     (_, i) => 2025 + i,
   );
 
-  const byYear: Record<number, { name: string; totalRounds: number; avgAll: number | null; bestStrokes: number | null }[]> = {};
+  const byYear: Record<number, { id: number; name: string; totalRounds: number; avgAll: number | null; bestStrokes: number | null }[]> = {};
   for (const year of years) {
     byYear[year] = memberList.map((member) => {
       const memberScoresInYear = scores.filter(
@@ -166,6 +182,7 @@ export default async function StatsPage() {
           ? Math.min(...memberScoresInYear.map((s) => s.strokes))
           : null;
       return {
+        id: member.id,
         name: member.name,
         totalRounds,
         avgAll,
@@ -202,6 +219,7 @@ export default async function StatsPage() {
       bettingRoundsCount={roundsWithAllThree.length}
       bettingWinner={bettingWinner}
       bettingStreak={bettingStreak}
+      bettingLatestLowest={bettingLatestLowest}
       years={years}
       byYear={byYear}
       byCourse={byCourse}

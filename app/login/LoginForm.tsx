@@ -1,10 +1,9 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from") || "/";
   const [password, setPassword] = useState("");
@@ -24,10 +23,12 @@ export function LoginForm() {
       const data = await res.json();
       if (!res.ok || !data.ok) {
         setError(data.error || "비밀번호가 올바르지 않습니다.");
+        setPending(false);
         return;
       }
-      router.push(from);
-      router.refresh();
+      // 쿠키가 반영된 뒤 이동하려면 전체 페이지 이동 사용 (한 번에 입장되도록)
+      window.location.replace(from);
+      return;
     } catch {
       setError("오류가 발생했습니다.");
     } finally {

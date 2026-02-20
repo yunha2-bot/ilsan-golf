@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { MemberStatsBottomSheet } from "./_components/MemberStatsBottomSheet";
 
 export type MemberStats = {
+  id: number;
   name: string;
   totalRounds: number;
   avgRecent5: number | null;
@@ -11,6 +14,7 @@ export type MemberStats = {
 };
 
 export type YearMemberStats = {
+  id: number;
   name: string;
   totalRounds: number;
   avgAll: number | null;
@@ -30,6 +34,7 @@ export function StatsView({
   bettingRoundsCount = 0,
   bettingWinner = null,
   bettingStreak = 0,
+  bettingLatestLowest = null,
   years = [],
   byYear = {},
   byCourse = [],
@@ -40,12 +45,15 @@ export function StatsView({
   bettingRoundsCount?: number;
   bettingWinner?: string | null;
   bettingStreak?: number;
+  /** 평균 대비 우승 없을 때 이번 경기 최저 타수 1등 */
+  bettingLatestLowest?: string | null;
   years?: number[];
   byYear?: Record<number, YearMemberStats[]>;
   byCourse?: CourseStats[];
 }) {
   const [showBettingOnly, setShowBettingOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"all" | number | "course">("all");
+  const [sheetMemberId, setSheetMemberId] = useState<number | null>(null);
 
   const list = showBettingOnly ? bettingByMember : byMember;
   const bettingNamesLabel =
@@ -57,13 +65,20 @@ export function StatsView({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
         <a
           href="/api/export/csv"
           download="golf-scores.csv"
           className="text-[11px] font-medium text-emerald-300 hover:text-emerald-50"
         >
           CSV 내보내기
+        </a>
+        <a
+          href="/api/export/xlsx"
+          download="golf-scores.xlsx"
+          className="text-[11px] font-medium text-emerald-300 hover:text-emerald-50"
+        >
+          엑셀(.xlsx) 내보내기
         </a>
       </div>
       {/* 부자되세요~ (전체일 때만 버튼, 연도 선택 시 텍스트만) + 연도 탭 */}
@@ -151,7 +166,7 @@ export function StatsView({
                     <span>{m.name}</span>
                     <span>
                       {m.rounds > 0 && m.avg !== null
-                        ? `평균 ${Math.round(m.avg)} (${m.rounds}회)`
+                        ? `평균 ${Math.floor(m.avg)} (${m.rounds}회)`
                         : "-"}
                     </span>
                   </div>
@@ -171,26 +186,30 @@ export function StatsView({
             </p>
           </div>
           {yearList?.map((m) => (
-            <article
-              key={m.name}
-              className="flex items-center justify-between rounded-2xl border border-emerald-800/70 bg-gradient-to-r from-emerald-950/95 via-emerald-900/95 to-emerald-950/95 px-4 py-3 shadow-md shadow-emerald-950/70"
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setSheetMemberId(m.id)}
+              className="w-full text-left rounded-2xl border border-emerald-800/70 bg-gradient-to-r from-emerald-950/95 via-emerald-900/95 to-emerald-950/95 px-4 py-3 shadow-md shadow-emerald-950/70 hover:border-emerald-600/80 transition"
             >
-              <div>
-                <p className="text-sm font-semibold text-emerald-50">{m.name}</p>
-                <p className="mt-1 text-[11px] text-emerald-100/80">
-                  {m.totalRounds > 0
-                    ? `${m.totalRounds} 라운드 기록`
-                    : "아직 기록 없음"}
-                  {m.bestStrokes !== null && ` · 최저 ${m.bestStrokes}`}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[11px] text-emerald-200/80">평균</p>
-                <p className="mt-0.5 text-sm font-semibold text-emerald-50">
-                  {m.avgAll !== null ? Math.round(m.avgAll) : "-"}
-                </p>
-              </div>
-            </article>
+              <article className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-50">{m.name}</p>
+                  <p className="mt-1 text-[11px] text-emerald-100/80">
+                    {m.totalRounds > 0
+                      ? `${m.totalRounds} 라운드 기록`
+                      : "아직 기록 없음"}
+                    {m.bestStrokes !== null && ` · 최저 ${m.bestStrokes}`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[11px] text-emerald-200/80">평균</p>
+                  <p className="mt-0.5 text-sm font-semibold text-emerald-50">
+                    {m.avgAll !== null ? Math.floor(m.avgAll) : "-"}
+                  </p>
+                </div>
+              </article>
+            </button>
           ))}
         </section>
       ) : (
@@ -213,65 +232,88 @@ export function StatsView({
         )}
       </section>
 
-      {showBettingOnly && bettingWinner && (
+      {showBettingOnly && (bettingWinner || bettingLatestLowest) && (
         <section className="rounded-2xl border border-amber-700/60 bg-amber-950/50 px-4 py-3 shadow-lg">
-          <p className="text-[11px] font-medium tracking-wider text-amber-300/90">
-            최근 경기 우승 (평균 대비 가장 많이 줄인 사람)
-          </p>
-          <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold text-amber-100">
-            <span aria-hidden>👑</span>
-            <span>{bettingWinner}</span>
-            {bettingStreak >= 2 && (
-              <span className="rounded-full bg-amber-600/80 px-2 py-0.5 text-[11px] font-bold text-amber-950">
-                {bettingStreak}연승
-              </span>
-            )}
-          </p>
+          {bettingWinner ? (
+            <>
+              <p className="text-[11px] font-medium tracking-wider text-amber-300/90">
+                최근 경기 우승 (평균 대비 가장 많이 줄인 사람)
+              </p>
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold text-amber-100">
+                <span aria-hidden>👑</span>
+                <span>{bettingWinner}</span>
+                {bettingStreak >= 2 && (
+                  <span className="rounded-full bg-amber-600/80 px-2 py-0.5 text-[11px] font-bold text-amber-950">
+                    {bettingStreak}연승
+                  </span>
+                )}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-[11px] font-medium tracking-wider text-amber-300/90">
+                이번 경기 최저 (1등)
+              </p>
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold text-amber-100">
+                <span aria-hidden>👑</span>
+                <span>{bettingLatestLowest}</span>
+              </p>
+            </>
+          )}
         </section>
       )}
 
       <section className="space-y-2">
         {list.map((m) => (
-          <article
-            key={m.name}
-            className="flex items-center justify-between rounded-2xl border border-emerald-800/70 bg-gradient-to-r from-emerald-950/95 via-emerald-900/95 to-emerald-950/95 px-4 py-3 shadow-md shadow-emerald-950/70"
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setSheetMemberId(m.id)}
+            className="w-full text-left rounded-2xl border border-emerald-800/70 bg-gradient-to-r from-emerald-950/95 via-emerald-900/95 to-emerald-950/95 px-4 py-3 shadow-md shadow-emerald-950/70 hover:border-emerald-600/80 transition"
           >
-            <div>
-              <p className="text-sm font-semibold text-emerald-50">
-                {m.name}
-              </p>
-              <p className="mt-1 text-[11px] text-emerald-100/80">
-                {m.totalRounds > 0
-                  ? `${m.totalRounds} 라운드 기록`
-                  : "아직 기록 없음"}
-                {m.bestStrokes !== null && ` · 최저 ${m.bestStrokes}`}
-              </p>
-            </div>
-            <div className="text-right">
-              {showBettingOnly ? (
-                <>
-                  <p className="text-[11px] text-emerald-200/80">최근 5경기 평균</p>
-                  <p className="mt-0.5 text-sm font-semibold text-emerald-50">
-                    {m.avgRecent5 !== null ? Math.round(m.avgRecent5) : "-"}
-                  </p>
-                  <p className="mt-1 text-[10px] text-emerald-300/75">
-                    전체 평균 {m.avgAll !== null ? Math.round(m.avgAll) : "-"}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-[11px] text-emerald-200/80">전체 평균</p>
-                  <p className="mt-0.5 text-sm font-semibold text-emerald-50">
-                    {m.avgAll !== null ? Math.round(m.avgAll) : "-"}
-                  </p>
+            <article className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-emerald-50">
+                  {m.name}
+                </p>
+                <p className="mt-1 text-[11px] text-emerald-100/80">
+                  {m.totalRounds > 0
+                    ? `${m.totalRounds} 라운드 기록`
+                    : "아직 기록 없음"}
+                  {m.bestStrokes !== null && ` · 최저 ${m.bestStrokes}`}
+                </p>
+              </div>
+              <div className="text-right">
+                {showBettingOnly ? (
+                  <>
+                    <p className="text-[11px] text-emerald-200/80">최근 5경기 평균</p>
+                    <p className="mt-0.5 text-sm font-semibold text-emerald-50">
+                      {m.avgRecent5 !== null ? Math.floor(m.avgRecent5) : "-"}
+                    </p>
+                    <p className="mt-1 text-[10px] text-emerald-300/75">
+                      전체 평균 {m.avgAll !== null ? Math.floor(m.avgAll) : "-"}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[11px] text-emerald-200/80">전체 평균</p>
+                    <p className="mt-0.5 text-sm font-semibold text-emerald-50">
+                      {m.avgAll !== null ? Math.floor(m.avgAll) : "-"}
+                    </p>
                 </>
               )}
             </div>
-          </article>
+            </article>
+          </button>
         ))}
       </section>
+
         </>
       )}
+      <MemberStatsBottomSheet
+        memberId={sheetMemberId}
+        onClose={() => setSheetMemberId(null)}
+      />
     </div>
   );
 }

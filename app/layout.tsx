@@ -20,6 +20,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "일산골프모임",
   description: "일산골프모임 멤버들의 스코어 관리 웹 앱",
+  themeColor: "#064e3b",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "일산골프",
+  },
 };
 
 const DEFAULT_NAMES = ["김동원", "김상우", "이문림", "신윤하"] as const;
@@ -54,7 +60,7 @@ export default async function RootLayout({
       >
         <div className="flex min-h-screen w-full justify-center">
           <div className="relative flex min-h-screen w-full max-w-md flex-col bg-gradient-to-b from-emerald-950 via-emerald-950 to-emerald-900">
-            <header className="sticky top-0 z-10 border-b border-emerald-900/60 bg-gradient-to-b from-emerald-950/95 to-emerald-950/80 px-4 pb-3 pt-5 backdrop-blur-md">
+            <header className="sticky top-0 z-30 border-b border-emerald-900/60 bg-gradient-to-b from-emerald-950/95 to-emerald-950/80 px-4 pb-3 pt-5 backdrop-blur-md">
               <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-emerald-300/70">
                 Ilsan Golf Crew
               </p>

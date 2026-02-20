@@ -23,6 +23,14 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const title = (formData.get("title") as string)?.trim() || "제목 없음";
     const description = (formData.get("description") as string)?.trim() || null;
+    const tagsRaw = (formData.get("tags") as string)?.trim() || "";
+    const tags = tagsRaw
+      ? tagsRaw
+          .split(/[,，\s]+/)
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .join(",")
+      : "";
     const file = formData.get("file");
 
     if (!file || !(file instanceof Blob)) {
@@ -59,13 +67,14 @@ export async function POST(req: NextRequest) {
     fs.writeFileSync(absolutePath, buffer);
 
     const item = await prisma.galleryItem.create({
-      data: { title, description, filePath: relativePath },
+      data: { title, description, tags, filePath: relativePath },
     });
 
     return NextResponse.json({
       id: item.id,
       title: item.title,
       description: item.description,
+      tags: item.tags,
       filePath: item.filePath,
       imageUrl: getFileUrl(item.filePath),
       createdAt: item.createdAt.toISOString(),

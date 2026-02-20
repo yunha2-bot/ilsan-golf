@@ -12,7 +12,7 @@ type RoundWithScores = Prisma.RoundGetPayload<{
 }>;
 
 const DEFAULT_PER_PAGE = 4;
-const MIN_PER_PAGE = 2;
+const MIN_PER_PAGE = 4;
 const MAX_PER_PAGE = 10;
 
 function formatDate(date: Date) {
@@ -150,7 +150,15 @@ export default async function Home(props: {
                     {byStrokes.length > 0 && (
                       <div className="text-[10px] text-emerald-200/90">
                         {byStrokes.slice(0, 4).map((s, i) => (
-                          <p key={s.id}>{rankLabels[i]} {s.member.name}</p>
+                          <p key={s.id}>
+                            {rankLabels[i]}{" "}
+                            <Link
+                              href={`/rounds/${round.id}/score/${s.member.id}`}
+                              className="font-medium text-emerald-100 hover:text-emerald-50 hover:underline"
+                            >
+                              {s.member.name}
+                            </Link>
+                          </p>
                         ))}
                       </div>
                     )}
@@ -159,22 +167,23 @@ export default async function Home(props: {
 
                 <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
                   {orderedScores.map((score) => (
-                    <div
+                    <Link
                       key={score.id}
-                      className="flex items-center justify-between rounded-xl border border-emerald-800/70 bg-emerald-950/80 px-2 py-1.5"
+                      href={`/rounds/${round.id}/score/${score.member.id}`}
+                      className="flex items-center justify-between rounded-xl border border-emerald-800/70 bg-emerald-950/80 px-2 py-1.5 hover:bg-emerald-800/70 hover:border-emerald-700/80 transition"
                     >
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-medium text-emerald-100">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[11px] font-medium text-emerald-100 truncate">
                           {score.member.name}
                         </span>
                         <span className="text-[10px] text-emerald-300/80">
                           Total
                         </span>
                       </div>
-                      <span className="text-xs font-semibold text-emerald-100">
+                      <span className="text-xs font-semibold text-emerald-100 flex-shrink-0">
                         {score.strokes}
                       </span>
-                    </div>
+                    </Link>
                   ))}
                 </div>
 

@@ -8,7 +8,7 @@ const CARD_HEIGHT = 200;
 /** 상단(헤더+버튼+섹션제목+패딩 등) 예상 높이, px */
 const RESERVED_HEIGHT = 320;
 
-const MIN_PER_PAGE = 2;
+const MIN_PER_PAGE = 4;
 const MAX_PER_PAGE = 10;
 
 function getPerPageFromViewport(): number {

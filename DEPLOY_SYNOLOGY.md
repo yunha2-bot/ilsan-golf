@@ -88,19 +88,12 @@ DATABASE_URL="mysql://golf_user:비밀번호@192.168.0.10:3306/golf_db"
 
 ---
 
-## 5. 경로 (볼륨)
+## 5. 경로 (업로드 사진)
 
 - **DB**: MariaDB가 관리 (파일 볼륨 없음)
-- **사진 업로드**: `/app/public/uploads` → 볼륨 `golf-uploads`에 저장
-
-NAS 공유 폴더에 직접 두고 싶다면 `docker-compose.yml`에서:
-
-```yaml
-volumes:
-  - /volume1/docker/ilsan-golf/uploads:/app/public/uploads
-```
-
-처럼 바꾸면 됩니다.
+- **사진 업로드**: 프로젝트 폴더 안 **`uploads/`** 에 저장됩니다.  
+  - Docker가 **`./uploads`** 를 컨테이너의 `/app/public/uploads`에 붙이므로, 갤러리·스코어카드 사진이 **NAS File Station**에서 `docker/ilsan-golf/uploads/년/월/일/` 안에 그대로 보입니다.
+  - 컨테이너를 다시 만들어도 이 폴더는 NAS에 남아 있습니다.
 
 ---
 
@@ -140,9 +133,9 @@ docker compose logs -f app
 ## 8. 데이터 보관
 
 - **DB**: MariaDB에 저장 (phpMyAdmin으로 백업·복원 가능)
-- **사진**: 볼륨 `golf-uploads` 또는 NAS 마운트 경로 (갤러리, 스코어카드)
+- **사진**: 프로젝트 폴더의 **`uploads/`** (갤러리, 스코어카드). File Station에서 `docker/ilsan-golf/uploads` 로 확인 가능.
 
-컨테이너를 지우거나 다시 빌드해도 DB는 MariaDB에, 사진은 볼륨에 유지됩니다.
+컨테이너를 지우거나 다시 빌드해도 DB는 MariaDB에, 사진은 `uploads/` 폴더에 유지됩니다.
 
 ---
 
@@ -165,7 +158,7 @@ docker compose up -d --build
 | external connectivity 오류 | 3000 포트가 이미 사용 중일 수 있음. docker-compose.yml에서 `3001:3000`으로 설정해 두었으므로 3001로 접속. 3000을 쓰려면 해당 포트를 쓰는 컨테이너/앱을 중지 후 재시작 |
 | DB 연결 오류 | `.env`의 `DATABASE_URL` 형식: `mysql://사용자:비밀번호@호스트:3306/DB이름`, MariaDB가 3306에서 실행 중인지, 사용자 권한 확인 (phpMyAdmin에서 테스트) |
 | 마이그레이션 실패 | phpMyAdmin으로 해당 DB에 접속 가능한지, 사용자에게 DB 권한(CREATE, ALTER 등) 있는지 확인 |
-| 사진 안 보임 | `UPLOAD_DIR`이 `/app/public/uploads`이고, 볼륨 `golf-uploads`가 해당 경로에 마운트됐는지 확인 |
+| 사진 안 보임 / uploads에 안 남음 | `docker-compose.yml`에 `./uploads:/app/public/uploads` 볼륨이 있는지 확인. NAS에서는 프로젝트 폴더(docker/ilsan-golf) 안에 `uploads` 폴더가 생기며, 업로드 시 그 안에 년/월/일 폴더가 만들어짐 |
 
 빌드 실패 시:
 

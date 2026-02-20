@@ -1,27 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
-import { isUploadUnderPublic, resolveAbsolutePath } from "@/lib/uploadConfig";
+import { resolveAbsolutePath } from "@/lib/uploadConfig";
 
 /**
- * UPLOAD_DIR이 public 밑이 아닐 때(예: NAS 볼륨) 업로드 파일을 서빙.
- * GET /api/uploads/2025/02/11/abc.jpg → 디스크에서 읽어 스트리밍
+ * 업로드 파일 서빙. GET /api/uploads/2025/02/11/abc.jpg → 디스크에서 읽어 반환
+ * (로컬·서버 동일. standalone에서 런타임에 추가된 파일도 표시됨)
  */
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ path?: string[] }> },
 ) {
-  if (isUploadUnderPublic()) {
-    return NextResponse.json({ error: "Not used when uploads are under public" }, { status: 404 });
-  }
-
   const pathSegments = (await context.params).path;
   if (!pathSegments?.length) {
     return NextResponse.json({ error: "Path required" }, { status: 400 });
   }
 
-  const relativePath = pathSegments.join("/");
-  // 상위 디렉터리 접근 방지
+  const relativePath = pathSegments.map((s) => decodeURIComponent(s)).join("/");
   if (relativePath.includes("..")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -42,9 +37,12 @@ export async function GET(
   const contentType = mime[ext] || "application/octet-stream";
 
   const buffer = fs.readFileSync(absolutePath);
-  return new NextResponse(buffer, {
+  const body = new Uint8Array(buffer);
+
+  return new NextResponse(body, {
     headers: {
       "Content-Type": contentType,
+      "Content-Length": String(body.length),
       "Cache-Control": "public, max-age=31536000",
     },
   });

@@ -60,17 +60,13 @@ export function resolveAbsolutePath(relativePath: string): string {
 
 /**
  * 브라우저에서 접근할 URL (img src 등)
- * - public/uploads 사용 시: /uploads/상대경로
- * - UPLOAD_DIR 사용 시: /api/uploads/상대경로 (API 라우트로 서빙)
+ * 항상 /api/uploads/... 로 서빙 (로컬·서버 동일 동작, standalone에서도 런타임 업로드 파일 표시)
  */
 export function getFileUrl(relativePath: string): string {
   const encoded = relativePath
     .split("/")
     .map((s) => encodeURIComponent(s))
     .join("/");
-  if (isUploadUnderPublic()) {
-    return `/uploads/${encoded}`;
-  }
   return `/api/uploads/${encoded}`;
 }
 
