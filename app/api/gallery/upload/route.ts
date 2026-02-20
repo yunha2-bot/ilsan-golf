@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
           .filter(Boolean)
           .join(",")
       : "";
+    const groupId = (formData.get("groupId") as string)?.trim() || null;
+    const isCover = formData.get("isCover") === "true";
     const file = formData.get("file");
 
     if (!file || !(file instanceof Blob)) {
@@ -67,7 +69,14 @@ export async function POST(req: NextRequest) {
     fs.writeFileSync(absolutePath, buffer);
 
     const item = await prisma.galleryItem.create({
-      data: { title, description, tags, filePath: relativePath },
+      data: {
+        title,
+        description,
+        tags,
+        filePath: relativePath,
+        groupId: groupId || undefined,
+        isCover,
+      },
     });
 
     return NextResponse.json({
@@ -76,6 +85,8 @@ export async function POST(req: NextRequest) {
       description: item.description,
       tags: item.tags,
       filePath: item.filePath,
+      groupId: item.groupId,
+      isCover: item.isCover,
       imageUrl: getFileUrl(item.filePath),
       createdAt: item.createdAt.toISOString(),
     });

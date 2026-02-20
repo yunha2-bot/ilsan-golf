@@ -13,6 +13,20 @@ function formatDate(date: Date) {
   });
 }
 
+/**
+ * 홀별 저장값은 파 대비(오버/언더): 0=파, 1=보기, -1=버디, -2=이글 등.
+ * 이 기준으로 버디/이글/알바트로스/콘도르/홀인원 라벨 반환.
+ */
+function getSpecialScoreLabel(overUnderPar: number, par: number): string | null {
+  // 홀인원: 실제 타수 1타 → par + overUnderPar === 1
+  if (par + overUnderPar === 1) return "홀인원";
+  if (overUnderPar === -1) return "버디";
+  if (overUnderPar === -2) return "이글";
+  if (overUnderPar === -3) return "알바트로스";
+  if (overUnderPar === -4) return "콘도르";
+  return null;
+}
+
 export default async function RoundMemberScorePage({
   params,
 }: {
@@ -142,11 +156,19 @@ export default async function RoundMemberScorePage({
               <td className="py-1 pr-1 text-[10px] font-medium text-emerald-300/90 align-bottom">
                 스코어
               </td>
-              {holes1_9.map((s, i) => (
-                <td key={i} className="py-1 text-xs font-semibold text-emerald-50">
-                  {s}
-                </td>
-              ))}
+              {holes1_9.map((s, i) => {
+                const label = getSpecialScoreLabel(s, par1_9[i]!);
+                return (
+                  <td
+                    key={i}
+                    className={`py-1 text-xs font-semibold ${label ? "text-red-400" : "text-emerald-50"}`}
+                    title={label ?? undefined}
+                  >
+                    {s}
+                    {label ? <span className="ml-0.5" aria-hidden>❤</span> : null}
+                  </td>
+                );
+              })}
             </tr>
           </tbody>
         </table>
@@ -183,11 +205,19 @@ export default async function RoundMemberScorePage({
               <td className="py-1 pr-1 text-[10px] font-medium text-emerald-300/90 align-bottom">
                 스코어
               </td>
-              {holes10_18.map((s, i) => (
-                <td key={i} className="py-1 text-xs font-semibold text-emerald-50">
-                  {s}
-                </td>
-              ))}
+              {holes10_18.map((s, i) => {
+                const label = getSpecialScoreLabel(s, par10_18[i]!);
+                return (
+                  <td
+                    key={i}
+                    className={`py-1 text-xs font-semibold ${label ? "text-red-400" : "text-emerald-50"}`}
+                    title={label ?? undefined}
+                  >
+                    {s}
+                    {label ? <span className="ml-0.5" aria-hidden>❤</span> : null}
+                  </td>
+                );
+              })}
             </tr>
           </tbody>
         </table>

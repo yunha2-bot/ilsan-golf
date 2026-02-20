@@ -4,9 +4,15 @@ import { useState } from "react";
 
 /**
  * 스코어카드 버튼 + 클릭 시 같은 페이지에서 라이트박스로 사진 표시.
- * 닫기 버튼으로 되돌아갈 수 있음.
+ * variant: "text" = 텍스트 링크, "thumbnail" = 코스 옆 작은 썸네일
  */
-export function ScorecardButton({ imageUrl }: { imageUrl: string }) {
+export function ScorecardButton({
+  imageUrl,
+  variant = "text",
+}: {
+  imageUrl: string;
+  variant?: "text" | "thumbnail";
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -14,9 +20,23 @@ export function ScorecardButton({ imageUrl }: { imageUrl: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-[11px] font-medium text-emerald-300/90 hover:text-emerald-200"
+        className={
+          variant === "thumbnail"
+            ? "flex-shrink-0 rounded-lg overflow-hidden border border-emerald-700/80 bg-emerald-900/80 w-10 h-10 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            : "text-[11px] font-medium text-emerald-300/90 hover:text-emerald-200"
+        }
+        aria-label="스코어카드 보기"
       >
-        스코어카드
+        {variant === "thumbnail" ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={imageUrl}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          "스코어카드"
+        )}
       </button>
       {open && (
         <div

@@ -6,17 +6,18 @@ export const revalidate = 0;
 
 export default async function GalleryPage() {
   // Prisma 클라이언트에 GalleryItem이 없으면(마이그레이션·generate 미실행) 빈 배열 사용
-  const model = (prisma as { galleryItem?: { findMany: (args: unknown) => Promise<{ id: number; title: string; description: string | null; tags: string; filePath: string; createdAt: Date }[]> } }).galleryItem;
-  const rows = model
-    ? await model.findMany({ orderBy: { createdAt: "desc" } })
-    : [];
+  const rows = await prisma.galleryItem.findMany({
+    orderBy: { createdAt: "desc" },
+  });
 
   const items = rows.map((r) => ({
     id: r.id,
     title: r.title,
     description: r.description,
-    tags: (r as { tags?: string }).tags ?? "",
+    tags: r.tags,
     filePath: r.filePath,
+    groupId: r.groupId,
+    isCover: r.isCover,
     imageUrl: getFileUrl(r.filePath),
     createdAt: r.createdAt.toISOString(),
   }));

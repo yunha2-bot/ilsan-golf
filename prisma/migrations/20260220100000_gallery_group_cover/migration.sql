@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `GalleryItem` ADD COLUMN `groupId` VARCHAR(191) NULL,
+    ADD COLUMN `isCover` BOOLEAN NOT NULL DEFAULT false;

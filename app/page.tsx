@@ -120,9 +120,17 @@ export default async function Home(props: {
                     <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-emerald-300/80">
                       Round #{round.id}
                     </p>
-                    <h2 className="mt-1 text-sm font-semibold text-emerald-50">
-                      {round.course || "코스 미지정"}
-                    </h2>
+                    <div className="mt-1 flex items-center gap-2">
+                      <h2 className="text-sm font-semibold text-emerald-50">
+                        {round.course || "코스 미지정"}
+                      </h2>
+                      {(round as { scorecardImagePath?: string | null }).scorecardImagePath && (
+                        <ScorecardButton
+                          imageUrl={getFileUrl((round as { scorecardImagePath: string }).scorecardImagePath)}
+                          variant="thumbnail"
+                        />
+                      )}
+                    </div>
                     <p className="mt-0.5 text-[11px] text-emerald-200/85">
                       {formatDate(round.date)}
                     </p>
@@ -133,11 +141,6 @@ export default async function Home(props: {
                       >
                         수정
                       </Link>
-                      {(round as { scorecardImagePath?: string | null }).scorecardImagePath && (
-                        <ScorecardButton
-                          imageUrl={getFileUrl((round as { scorecardImagePath: string }).scorecardImagePath)}
-                        />
-                      )}
                       <DeleteRoundButton roundId={round.id} />
                     </div>
                   </div>

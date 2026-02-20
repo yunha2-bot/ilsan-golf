@@ -79,12 +79,15 @@ model Score {
 }
 
 // 갤러리 사진: 제목·설명·태그 + 파일 경로(상대). 태그는 쉼표 구분(예: "2025,남서울CC")
+// 한 번에 올린 여러 장은 같은 groupId로 묶고, 대표 사진만 isCover true
 model GalleryItem {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
   tags        String   @default("") // 쉼표 구분 태그. 앨범/필터용
   filePath    String   // 저장 경로 상대값 (예: 2025/02/11/abc.jpg) → URL은 uploadConfig 기준
+  groupId     String?  // 같은 게시글(한 번에 올린 묶음) 식별. null이면 1장짜리 게시글
+  isCover     Boolean  @default(false) // 그룹 대표 사진 여부
   createdAt   DateTime @default(now())
 }
 

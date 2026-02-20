@@ -25,9 +25,9 @@ services:
       # 프로젝트 폴더의 uploads → 컨테이너 업로드 경로 (사진이 여기 남음)
       - ./uploads:/app/public/uploads
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 90s
 
