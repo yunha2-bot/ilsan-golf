@@ -37,7 +37,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="mx-auto max-w-xs space-y-4 pt-8">
+    <div className="mx-auto max-w-xs md:max-w-sm space-y-4 pt-8 md:pt-12">
       <p className="text-center text-[11px] text-emerald-200/90">
         접속하려면 비밀번호를 입력하세요.
       </p>

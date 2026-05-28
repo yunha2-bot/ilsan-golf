@@ -21,13 +21,10 @@ services:
     environment:
       # DB는 .env의 DATABASE_URL 사용 (MariaDB URL)
       UPLOAD_DIR: "/app/public/uploads"
+      # 이미지 절대 URL (카카오톡·링크 공유 시 깨짐 방지). .env에 넣거나 여기 직접 입력
+      NEXT_PUBLIC_APP_URL: "https://golf.yoonha.synology.me"
     volumes:
       # 프로젝트 폴더의 uploads → 컨테이너 업로드 경로 (사진이 여기 남음)
       - ./uploads:/app/public/uploads
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 90s
-
+    # healthcheck 제거: 앱 기동이 느리거나 wget 미설치 시 Connection refused가 계속 발생해 비활성화함.
+    # 앱 동작에는 영향 없으며, 브라우저로 접속 가능하면 정상입니다.

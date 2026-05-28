@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"z:\\\\ilsangolf_app\" -Force | Select-Object Name, @{Name=\"Type\"; Expression={if\\($_.PSIsContainer\\){\"디렉토리\"}else{\"파일\"}}} | Format-Table -AutoSize)",
+      "Bash(Get-ChildItem -Path \"z:\\\\ilsangolf_app\" -Recurse -Filter \"*ScoreInputTable*\" -ErrorAction SilentlyContinue)",
+      "Bash(npx prisma *)",
+      "Bash(npx tsc *)",
+      "Bash(npx next *)",
+      "PowerShell(cd \"z:\\\\ilsangolf_app\"; node -e \"const {PrismaClient}=require\\('@prisma/client'\\);const p=new PrismaClient\\(\\);p.course.findMany\\({orderBy:{name:'asc'}}\\).then\\(r=>{console.log\\(JSON.stringify\\(r,null,2\\)\\);p.\\\\$disconnect\\(\\)}\\)\")",
+      "PowerShell(Get-ChildItem -Path \"z:\\\\ilsangolf_app\" -Force | Select-Object Name, @{Name=\"Type\";Expression={if\\($_.PSIsContainer\\){\"Directory\"}else{\"File\"}}} | Format-Table -AutoSize)",
+      "Bash(xargs grep -l \"Round\\\\|prisma.round\")"
+    ]
+  }
+}

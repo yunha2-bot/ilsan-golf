@@ -113,6 +113,50 @@ export async function createCourse(formData: FormData): Promise<
   return { ok: true, course };
 }
 
+export async function updateCourseName(
+  courseId: number,
+  newName: string,
+): Promise<{ ok: true; course: CoursePar } | { ok: false; error: string }> {
+  const name = newName.trim();
+  if (!name) return { ok: false, error: "코스 이름을 입력해 주세요." };
+
+  const course = await prisma.course.findUnique({ where: { id: courseId } });
+  if (!course) return { ok: false, error: "코스를 찾을 수 없습니다." };
+  if (course.name === name) {
+    return {
+      ok: true,
+      course: { id: course.id, name: course.name, par1: course.par1, par2: course.par2, par3: course.par3, par4: course.par4, par5: course.par5, par6: course.par6, par7: course.par7, par8: course.par8, par9: course.par9, par10: course.par10, par11: course.par11, par12: course.par12, par13: course.par13, par14: course.par14, par15: course.par15, par16: course.par16, par17: course.par17, par18: course.par18 },
+    };
+  }
+
+  const existing = await prisma.course.findUnique({ where: { name } });
+  if (existing) return { ok: false, error: "이미 같은 이름의 코스가 있습니다." };
+
+  const oldName = course.name;
+  const [updated] = await prisma.$transaction([
+    prisma.course.update({
+      where: { id: courseId },
+      data: { name },
+    }),
+    prisma.round.updateMany({
+      where: { course: oldName },
+      data: { course: name },
+    }),
+  ]);
+  const result: CoursePar = {
+    id: updated.id,
+    name: updated.name,
+    par1: updated.par1, par2: updated.par2, par3: updated.par3, par4: updated.par4, par5: updated.par5,
+    par6: updated.par6, par7: updated.par7, par8: updated.par8, par9: updated.par9,
+    par10: updated.par10, par11: updated.par11, par12: updated.par12, par13: updated.par13, par14: updated.par14,
+    par15: updated.par15, par16: updated.par16, par17: updated.par17, par18: updated.par18,
+  };
+  revalidatePath("/rounds/new");
+  revalidatePath("/rounds/[id]/edit", "page");
+  revalidatePath("/");
+  return { ok: true, course: result };
+}
+
 export async function deleteCourse(courseId: number): Promise<{ ok: boolean; error?: string }> {
   try {
     await prisma.course.delete({ where: { id: courseId } });

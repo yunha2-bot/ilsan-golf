@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getFileUrl } from "@/lib/uploadConfig";
+import { getFileUrl, getBaseUrlFromHeaders } from "@/lib/uploadConfig";
 import { GalleryGroupClient } from "../GalleryGroupClient";
 
 export const revalidate = 0;
@@ -10,8 +10,9 @@ type Props = { params: Promise<{ groupId: string }> };
 export default async function GalleryGroupPage({ params }: Props) {
   const { groupId } = await params;
   const decoded = decodeURIComponent(groupId);
+  const baseUrl = await getBaseUrlFromHeaders();
 
-  let items: { id: number; title: string; description: string | null; tags: string; filePath: string; groupId: string | null; isCover: boolean; createdAt: Date }[];
+  let items: { id: number; title: string; description: string | null; tags: string; filePath: string; groupId: string | null; isCover: boolean; roundId: number | null; createdAt: Date }[];
 
   if (decoded.startsWith("single-")) {
     const id = Number(decoded.replace("single-", ""));
@@ -42,7 +43,8 @@ export default async function GalleryGroupPage({ params }: Props) {
     filePath: r.filePath,
     groupId: r.groupId,
     isCover: r.isCover,
-    imageUrl: getFileUrl(r.filePath),
+    roundId: r.roundId,
+    imageUrl: getFileUrl(r.filePath, baseUrl),
     createdAt: r.createdAt.toISOString(),
   }));
 
@@ -57,6 +59,13 @@ export default async function GalleryGroupPage({ params }: Props) {
     );
   }
 
+  const rounds = await prisma.round.findMany({
+    select: { id: true, date: true, course: true },
+    orderBy: { date: "desc" },
+  });
+
+  const currentRoundId = list[0]?.roundId ?? null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -70,7 +79,15 @@ export default async function GalleryGroupPage({ params }: Props) {
           {list.length}장
         </span>
       </div>
-      <GalleryGroupClient items={list} />
+      <GalleryGroupClient
+        items={list}
+        groupKey={decoded}
+        rounds={rounds.map((r) => ({
+          id: r.id,
+          label: `${r.date.toLocaleDateString("ko-KR", { month: "long", day: "numeric" })} · ${r.course}`,
+        }))}
+        initialRoundId={currentRoundId}
+      />
     </div>
   );
 }

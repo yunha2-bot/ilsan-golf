@@ -79,9 +79,9 @@ async function createRound(formData: FormData) {
     },
   });
 
-  for (let memberIdx = 0; memberIdx < MEMBER_COUNT; memberIdx++) {
-    const memberIdRaw = formData.get(`memberId_${memberIdx}`);
-    const memberId = typeof memberIdRaw === "string" ? parseInt(memberIdRaw, 10) : NaN;
+  const allMemberIds = formData.getAll("selectedMemberId").map((v) => parseInt(v as string, 10)).filter(Number.isFinite);
+  for (let memberIdx = 0; memberIdx < allMemberIds.length; memberIdx++) {
+    const memberId = allMemberIds[memberIdx];
     if (!Number.isFinite(memberId)) continue;
 
     const holes: number[] = [];
@@ -151,23 +151,11 @@ export default async function NewRoundPage() {
         action={createRound}
         className="space-y-4 rounded-2xl border border-emerald-800/70 bg-emerald-950/80 px-4 py-4 shadow-lg shadow-emerald-950/70"
       >
-        {memberList.map((m, i) => (
-          <input key={m.id} type="hidden" name={`memberId_${i}`} value={m.id} />
-        ))}
         <RoundFormFields
           members={memberList}
           courses={courses}
           defaultRoundDate={new Date().toISOString().slice(0, 10)}
         />
-
-        <div className="pt-2">
-          <button
-            type="submit"
-            className="flex w-full items-center justify-center rounded-full bg-emerald-500 px-4 py-2.5 text-xs font-semibold text-emerald-950 shadow-lg shadow-emerald-900/80 transition hover:bg-emerald-400"
-          >
-            라운드 저장하기
-          </button>
-        </div>
       </form>
     </div>
   );

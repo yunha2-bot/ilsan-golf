@@ -33,6 +33,9 @@ export async function GET(
     ".png": "image/png",
     ".gif": "image/gif",
     ".webp": "image/webp",
+    ".mp4": "video/mp4",
+    ".webm": "video/webm",
+    ".mov": "video/quicktime",
   };
   const contentType = mime[ext] || "application/octet-stream";
 
@@ -43,7 +46,8 @@ export async function GET(
     headers: {
       "Content-Type": contentType,
       "Content-Length": String(body.length),
-      "Cache-Control": "public, max-age=31536000",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Access-Control-Allow-Origin": "*",
     },
   });
 }

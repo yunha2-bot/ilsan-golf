@@ -1,44 +1,34 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
-
-const PAR_OFFSET = 72;
+import { useState, useMemo } from "react";
 
 type ScoresMatrix = number[][];
 
 export type MemberOption = { id: number; name: string };
 
 function defaultScores(len: number): ScoresMatrix {
-  return Array.from({ length: len }, () =>
-    Array.from({ length: 18 }, () => 0),
-  );
+  return Array.from({ length: len }, () => Array.from({ length: 18 }, () => 0));
 }
 
-/** 18개 숫자 배열 → 한 줄 문자열 (0=파, 1~9=+1~+9, -1=b, -2=e) */
-function scoresToLine(row: number[]): string {
-  return row
-    .slice(0, 18)
-    .map((v) => {
-      if (v === -1) return "b";
-      if (v === -2) return "e";
-      if (v >= 0 && v <= 9) return String(v);
-      return "0";
-    })
-    .join("");
+function getScoreColor(overUnder: number): string {
+  if (overUnder <= -2) return "bg-purple-600/80 text-purple-50 border-purple-500/60";
+  if (overUnder === -1) return "bg-blue-500/80 text-blue-50 border-blue-400/60";
+  if (overUnder === 0) return "bg-emerald-900/80 text-emerald-100 border-emerald-700/60";
+  if (overUnder === 1) return "bg-yellow-700/80 text-yellow-50 border-yellow-600/60";
+  if (overUnder === 2) return "bg-orange-700/80 text-orange-50 border-orange-600/60";
+  return "bg-red-800/80 text-red-50 border-red-700/60";
 }
 
-/** 한 줄 문자열 → 18개 숫자 배열. 0-9 그대로, b/B=-1, e/E=-2 */
-function lineToScores(line: string): number[] {
-  const cleaned = line.replace(/\s/g, "").toLowerCase();
-  const out: number[] = [];
-  for (let i = 0; i < 18; i++) {
-    const c = cleaned[i];
-    if (c === "b") out.push(-1);
-    else if (c === "e") out.push(-2);
-    else if (c >= "0" && c <= "9") out.push(Number(c));
-    else out.push(0);
-  }
-  return out;
+function getScoreLabel(overUnder: number, par: number): string {
+  const actual = par + overUnder;
+  if (actual === 1) return "HIO";
+  if (overUnder <= -3) return "알바";
+  if (overUnder === -2) return "이글";
+  if (overUnder === -1) return "버디";
+  if (overUnder === 0) return "파";
+  if (overUnder === 1) return "보기";
+  if (overUnder === 2) return "더블";
+  return `+${overUnder}`;
 }
 
 type Props = {
@@ -49,66 +39,62 @@ type Props = {
 
 export function ScoreInputTable({ members, initialScores, coursePar }: Props) {
   const len = members.length;
+  const PAR_DEFAULT = Array.from({ length: 18 }, () => 4);
+  const par = coursePar ?? PAR_DEFAULT;
+  const parTotal = par.reduce((a, b) => a + b, 0);
+
   const [scores, setScores] = useState<ScoresMatrix>(
     () => initialScores ?? defaultScores(len),
   );
   const [activeMemberIndex, setActiveMemberIndex] = useState<number | null>(null);
-  /** 입력창에 보여줄 문자열(드래프트). 멤버 전환 시 scores와 동기화 */
-  const [lineDraft, setLineDraft] = useState("");
 
-  const parTotal = coursePar?.reduce((a, b) => a + b, 0) ?? PAR_OFFSET;
+  // members 배열이 바뀌면 scores를 맞춤 (선택 멤버 변경 대응)
+  const effectiveScores: ScoresMatrix = useMemo(() => {
+    if (scores.length === len) return scores;
+    const next = defaultScores(len);
+    for (let i = 0; i < Math.min(len, scores.length); i++) {
+      next[i] = scores[i] ?? Array(18).fill(0);
+    }
+    return next;
+  }, [len, scores]);
 
   const totalsByMember = useMemo(
     () =>
-      scores.map((row) => {
-        const sum = row.reduce(
-          (s, v) => s + (Number.isFinite(v) ? v : 0),
-          0,
-        );
-        return parTotal + sum;
-      }),
-    [scores, parTotal],
+      effectiveScores.map((row) =>
+        row.reduce((s, v, i) => s + par[i] + (Number.isFinite(v) ? v : 0), 0),
+      ),
+    [effectiveScores, par],
   );
 
-  const setActiveLine = useCallback(
-    (line: string) => {
-      if (activeMemberIndex === null) return;
-      const next = scores.map((row) => [...row]);
-      next[activeMemberIndex] = lineToScores(line);
-      setScores(next);
-    },
-    [activeMemberIndex, scores],
-  );
-
-  const handleMemberClick = useCallback(
-    (idx: number) => {
-      setActiveMemberIndex(idx);
-      setLineDraft(scoresToLine(scores[idx] ?? []));
-    },
-    [scores],
-  );
-
-  const handleLineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    const cleaned = raw.replace(/\s/g, "").replace(/[^0-9be]/gi, "");
-    const slice = cleaned.slice(0, 18);
-    setLineDraft(slice);
-    setActiveLine(slice);
+  const adjustScore = (memberIdx: number, holeIdx: number, delta: number) => {
+    const current = effectiveScores[memberIdx]?.[holeIdx] ?? 0;
+    const minVal = -(par[holeIdx] - 1); // 최소 1타
+    const maxVal = 9;
+    const next = Math.max(minVal, Math.min(maxVal, current + delta));
+    setScores((prev) => {
+      const updated = prev.map((row) => [...row]);
+      if (!updated[memberIdx]) updated[memberIdx] = Array(18).fill(0);
+      updated[memberIdx][holeIdx] = next;
+      return updated;
+    });
   };
+
+  const activeScores = activeMemberIndex !== null ? (effectiveScores[activeMemberIndex] ?? []) : [];
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-1">
+      {/* 멤버 탭 */}
+      <div className="flex flex-col gap-1.5">
         <span className="text-[11px] text-emerald-200/85">
-          멤버를 클릭한 뒤, 아래 입력창에 1홀~18홀 순서로 숫자만 입력하세요.
+          멤버를 선택한 뒤 각 홀의 +/- 버튼으로 스코어를 입력하세요.
         </span>
         <div className="flex flex-wrap gap-1.5">
           {members.map((m, idx) => (
             <button
               key={m.id}
               type="button"
-              onClick={() => handleMemberClick(idx)}
-              className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${
+              onClick={() => setActiveMemberIndex(activeMemberIndex === idx ? null : idx)}
+              className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition ${
                 activeMemberIndex === idx
                   ? "bg-emerald-400 text-emerald-950"
                   : "bg-emerald-950/70 text-emerald-100/85 border border-emerald-700/70"
@@ -116,65 +102,135 @@ export function ScoreInputTable({ members, initialScores, coursePar }: Props) {
             >
               {m.name}
               {totalsByMember[idx] !== parTotal && (
-                <span className="ml-1 opacity-80">
-                  {totalsByMember[idx]}
-                </span>
+                <span className="ml-1 opacity-80">{totalsByMember[idx]}</span>
               )}
             </button>
           ))}
         </div>
       </div>
 
+      {/* 활성 멤버 홀별 입력 */}
       {activeMemberIndex !== null && (
-        <div className="rounded-2xl border border-emerald-800/70 bg-emerald-950/80 p-3">
-          <p className="text-sm font-semibold text-emerald-50">
-            {members[activeMemberIndex].name}
-          </p>
-          <p className="mt-1 text-[11px] text-emerald-200/85">
-            1홀→18홀 순서로 입력 (0=파, 1~9=+1~+9, b=버디 -1, e=이글 -2)
-          </p>
-          <input
-            type="text"
-            inputMode="text"
-            autoCapitalize="none"
-            autoComplete="off"
-            value={lineDraft}
-            onChange={handleLineChange}
-            placeholder="예: 322312210223002201"
-            maxLength={18}
-            className="mt-2 w-full rounded-lg border border-emerald-600/80 bg-emerald-950/90 px-3 py-2.5 font-mono text-xs tracking-widest text-emerald-50 placeholder:text-emerald-400/50 focus:border-emerald-400 focus:outline-none"
-          />
-          <p className="mt-1.5 text-[11px] text-emerald-300/80">
-            {lineDraft.length}/18자 · 총점 {totalsByMember[activeMemberIndex]}
-          </p>
+        <div className="rounded-2xl border border-emerald-800/70 bg-emerald-950/80 p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-emerald-50">
+              {members[activeMemberIndex].name}
+            </p>
+            <p className="text-[11px] text-emerald-300/80">
+              총점 <span className="font-semibold text-emerald-50">{totalsByMember[activeMemberIndex]}</span>
+            </p>
+          </div>
+
+          {/* 전반 (1~9홀) */}
+          <div>
+            <p className="mb-2 text-[10px] font-medium text-emerald-300/80">전반 (1~9홀)</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {Array.from({ length: 9 }).map((_, holeIdx) => {
+                const val = activeScores[holeIdx] ?? 0;
+                const holePar = par[holeIdx];
+                const colorClass = getScoreColor(val);
+                const label = getScoreLabel(val, holePar);
+                return (
+                  <div
+                    key={holeIdx}
+                    className={`rounded-xl border p-2 text-center ${colorClass}`}
+                  >
+                    <p className="text-[9px] font-medium opacity-75">
+                      {holeIdx + 1}홀 · P{holePar}
+                    </p>
+                    <p className="mt-0.5 text-[10px] font-semibold">{label}</p>
+                    <p className="text-[11px] font-bold">{holePar + val}</p>
+                    <div className="mt-1.5 flex justify-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => adjustScore(activeMemberIndex, holeIdx, -1)}
+                        className="h-7 w-7 rounded-lg bg-black/20 text-sm font-bold leading-none hover:bg-black/40 active:scale-95"
+                        aria-label={`${holeIdx + 1}홀 타수 줄이기`}
+                      >
+                        −
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => adjustScore(activeMemberIndex, holeIdx, 1)}
+                        className="h-7 w-7 rounded-lg bg-black/20 text-sm font-bold leading-none hover:bg-black/40 active:scale-95"
+                        aria-label={`${holeIdx + 1}홀 타수 늘리기`}
+                      >
+                        ＋
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 후반 (10~18홀) */}
+          <div>
+            <p className="mb-2 text-[10px] font-medium text-emerald-300/80">후반 (10~18홀)</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {Array.from({ length: 9 }).map((_, i) => {
+                const holeIdx = i + 9;
+                const val = activeScores[holeIdx] ?? 0;
+                const holePar = par[holeIdx];
+                const colorClass = getScoreColor(val);
+                const label = getScoreLabel(val, holePar);
+                return (
+                  <div
+                    key={holeIdx}
+                    className={`rounded-xl border p-2 text-center ${colorClass}`}
+                  >
+                    <p className="text-[9px] font-medium opacity-75">
+                      {holeIdx + 1}홀 · P{holePar}
+                    </p>
+                    <p className="mt-0.5 text-[10px] font-semibold">{label}</p>
+                    <p className="text-[11px] font-bold">{holePar + val}</p>
+                    <div className="mt-1.5 flex justify-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => adjustScore(activeMemberIndex, holeIdx, -1)}
+                        className="h-7 w-7 rounded-lg bg-black/20 text-sm font-bold leading-none hover:bg-black/40 active:scale-95"
+                        aria-label={`${holeIdx + 1}홀 타수 줄이기`}
+                      >
+                        −
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => adjustScore(activeMemberIndex, holeIdx, 1)}
+                        className="h-7 w-7 rounded-lg bg-black/20 text-sm font-bold leading-none hover:bg-black/40 active:scale-95"
+                        aria-label={`${holeIdx + 1}홀 타수 늘리기`}
+                      >
+                        ＋
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* 폼 전송용: 모든 멤버×18홀 hidden */}
+      {/* 폼 전송용 hidden inputs */}
       {members.map((_, memberIdx) =>
         Array.from({ length: 18 }).map((_, holeIdx) => (
           <input
             key={`h${holeIdx}-${memberIdx}`}
             type="hidden"
             name={`h${holeIdx + 1}_${memberIdx}`}
-            value={scores[memberIdx]?.[holeIdx] ?? 0}
+            value={effectiveScores[memberIdx]?.[holeIdx] ?? 0}
             readOnly
           />
         )),
       )}
 
+      {/* 요약 테이블 */}
       <div className="overflow-auto rounded-2xl border border-emerald-800/70 bg-emerald-950/80">
         <table className="min-w-full border-collapse text-center text-[11px] text-emerald-50">
           <thead className="bg-emerald-900/90">
             <tr>
-              <th className="px-2 py-2 text-left text-[11px] font-medium text-emerald-100/90">
-                홀 / PAR
-              </th>
+              <th className="px-2 py-2 text-left text-[11px] font-medium text-emerald-100/90">홀 / PAR</th>
               {members.map((m) => (
-                <th
-                  key={m.id}
-                  className="px-2 py-2 text-[11px] font-medium text-emerald-100/90"
-                >
+                <th key={m.id} className="px-2 py-2 text-[11px] font-medium text-emerald-100/90">
                   {m.name}
                 </th>
               ))}
@@ -184,26 +240,26 @@ export function ScoreInputTable({ members, initialScores, coursePar }: Props) {
             {Array.from({ length: 18 }).map((_, holeIdx) => (
               <tr
                 key={holeIdx}
-                className={
-                  holeIdx % 2 === 0 ? "bg-emerald-950/60" : "bg-emerald-900/60"
-                }
+                className={holeIdx % 2 === 0 ? "bg-emerald-950/60" : "bg-emerald-900/60"}
               >
                 <td className="px-2 py-1.5 text-left text-[11px] text-emerald-100">
                   <span>{holeIdx + 1}홀</span>
                   {coursePar && (
-                    <span className="ml-1 text-[11px] text-emerald-300/90">
-                      PAR {coursePar[holeIdx]}
-                    </span>
+                    <span className="ml-1 text-[11px] text-emerald-300/90">P{par[holeIdx]}</span>
                   )}
                 </td>
                 {members.map((_, memberIdx) => {
-                  const val = scores[memberIdx]?.[holeIdx] ?? 0;
+                  const val = effectiveScores[memberIdx]?.[holeIdx] ?? 0;
+                  const actual = par[holeIdx] + val;
+                  let cellClass = "text-emerald-50";
+                  if (val <= -2) cellClass = "text-purple-300 font-semibold";
+                  else if (val === -1) cellClass = "text-blue-300 font-semibold";
+                  else if (val === 1) cellClass = "text-yellow-300";
+                  else if (val === 2) cellClass = "text-orange-300";
+                  else if (val >= 3) cellClass = "text-red-300";
                   return (
-                    <td
-                      key={memberIdx}
-                      className="px-2 py-1.5 text-center text-xs text-emerald-50"
-                    >
-                      {val === 0 ? "−" : val}
+                    <td key={memberIdx} className={`px-2 py-1.5 text-center text-xs ${cellClass}`}>
+                      {val === 0 ? "−" : actual}
                     </td>
                   );
                 })}
@@ -212,14 +268,9 @@ export function ScoreInputTable({ members, initialScores, coursePar }: Props) {
           </tbody>
           <tfoot>
             <tr className="bg-emerald-900/95">
-              <td className="px-2 py-2 text-left text-[11px] font-semibold text-emerald-50">
-                총점
-              </td>
+              <td className="px-2 py-2 text-left text-[11px] font-semibold text-emerald-50">총점</td>
               {members.map((m, idx) => (
-                <td
-                  key={m.id}
-                  className="px-2 py-2 text-center text-[11px] font-semibold text-emerald-50"
-                >
+                <td key={m.id} className="px-2 py-2 text-center text-[11px] font-semibold text-emerald-50">
                   {totalsByMember[idx]}
                 </td>
               ))}

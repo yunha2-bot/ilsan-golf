@@ -1,12 +1,21 @@
 import { prisma } from "@/lib/prisma";
-import { getFileUrl } from "@/lib/uploadConfig";
+import { getFileUrl, getBaseUrlFromHeaders } from "@/lib/uploadConfig";
 import { GalleryClient } from "./GalleryClient";
 
 export const revalidate = 0;
 
-export default async function GalleryPage() {
-  // Prisma 클라이언트에 GalleryItem이 없으면(마이그레이션·generate 미실행) 빈 배열 사용
+export default async function GalleryPage(props: {
+  searchParams?: Promise<{ roundId?: string; upload?: string }>;
+}) {
+  const searchParams = (await props.searchParams) ?? {};
+  const roundId = searchParams.roundId ? parseInt(searchParams.roundId, 10) || null : null;
+  const autoOpenUpload = searchParams.upload === "1";
+
+  const baseUrl = await getBaseUrlFromHeaders();
+
+  const where = roundId ? { roundId } : {};
   const rows = await prisma.galleryItem.findMany({
+    where,
     orderBy: { createdAt: "desc" },
   });
 
@@ -18,9 +27,23 @@ export default async function GalleryPage() {
     filePath: r.filePath,
     groupId: r.groupId,
     isCover: r.isCover,
-    imageUrl: getFileUrl(r.filePath),
+    roundId: r.roundId,
+    imageUrl: getFileUrl(r.filePath, baseUrl),
     createdAt: r.createdAt.toISOString(),
   }));
 
-  return <GalleryClient items={items} />;
+  let roundLabel: string | null = null;
+  if (roundId) {
+    const round = await prisma.round.findUnique({ where: { id: roundId } });
+    roundLabel = round ? `Round #${round.id} · ${round.course}` : null;
+  }
+
+  return (
+    <GalleryClient
+      items={items}
+      filterRoundId={roundId}
+      filterRoundLabel={roundLabel}
+      autoOpenUpload={autoOpenUpload}
+    />
+  );
 }

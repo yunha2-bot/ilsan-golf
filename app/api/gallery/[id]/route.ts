@@ -16,17 +16,50 @@ export async function PATCH(
       );
     }
     const body = await req.json().catch(() => ({}));
-    const tagsRaw = typeof body.tags === "string" ? body.tags.trim() : "";
-    const tags = tagsRaw
-      ? tagsRaw
-          .split(/[,，\s]+/)
-          .map((t: string) => t.trim())
-          .filter(Boolean)
-          .join(",")
-      : "";
+    const data: { title?: string; description?: string | null; tags?: string; isCover?: boolean; roundId?: number | null } = {};
+    if (typeof body.title === "string") {
+      data.title = body.title.trim() || "제목 없음";
+    }
+    if (typeof body.description === "string") {
+      data.description = body.description.trim() || null;
+    }
+    if (typeof body.tags === "string") {
+      const tagsRaw = body.tags.trim();
+      data.tags = tagsRaw
+        ? tagsRaw
+            .split(/[,，\s]+/)
+            .map((t: string) => t.trim())
+            .filter(Boolean)
+            .join(",")
+        : "";
+    }
+    if (body.isCover === true) {
+      data.isCover = true;
+    }
+    if ("roundId" in body) {
+      data.roundId = body.roundId === null ? null : Number(body.roundId) || null;
+    }
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json(
+        { error: "수정할 항목(제목, 내용, 태그, 대표사진)이 없습니다." },
+        { status: 400 },
+      );
+    }
+    if (data.isCover === true) {
+      const target = await prisma.galleryItem.findUnique({ where: { id } });
+      if (!target) {
+        return NextResponse.json({ error: "항목을 찾을 수 없습니다." }, { status: 404 });
+      }
+      if (target.groupId) {
+        await prisma.galleryItem.updateMany({
+          where: { groupId: target.groupId },
+          data: { isCover: false },
+        });
+      }
+    }
     const item = await prisma.galleryItem.update({
       where: { id },
-      data: { tags },
+      data,
     });
     return NextResponse.json({
       id: item.id,
@@ -34,6 +67,8 @@ export async function PATCH(
       description: item.description,
       tags: item.tags,
       filePath: item.filePath,
+      groupId: item.groupId,
+      isCover: item.isCover,
       createdAt: item.createdAt.toISOString(),
     });
   } catch (e) {

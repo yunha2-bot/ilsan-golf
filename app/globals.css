@@ -3,6 +3,11 @@
 :root {
   --background: #020617;
   --foreground: #ecfdf5;
+  /* 세이프 영역: 노치·홈 인디케이터(일반 폰, 갤럭시 Z 폴드 등) */
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
   /* 타입 스케일 통일 */
   --text-caption: 0.625rem;   /* 10px */
   --text-label: 0.6875rem;    /* 11px */
@@ -33,6 +38,46 @@ body {
   font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont,
     "SF Pro Text", "Segoe UI", sans-serif;
   font-size: var(--text-body);
+}
+@media (min-width: 768px) {
+  body {
+    font-size: var(--text-body-lg);
+  }
+}
+
+/* 일반 핸드폰·갤럭시 Z 폴드: 노치/홈 바 영역 피함 */
+.safe-area-root {
+  padding-left: var(--safe-area-inset-left);
+  padding-right: var(--safe-area-inset-right);
+}
+.safe-area-top {
+  padding-top: var(--safe-area-inset-top);
+}
+.safe-area-bottom {
+  padding-bottom: var(--safe-area-inset-bottom);
+}
+
+/* 헤더: 콘텐츠를 세로 중앙에 두기 위해 높이 확보 후 중앙 정렬 */
+.app-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 6.5rem;  /* 콘텐츠보다 키워야 위·아래에 여백이 생겨 진짜 중앙 정렬됨 */
+}
+@media (min-width: 768px) {
+  .app-header {
+    min-height: 7rem;
+  }
+}
+.app-header-inner {
+  flex: 0 0 auto;   /* 늘어나지 않음 → 콘텐츠 높이만 사용 */
+  width: 100%;
+  margin: 0;
+}
+.app-header-inner > * {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 /* 공통 레이아웃: 섹션 카드 (글자/줄바꿈 통일용) */

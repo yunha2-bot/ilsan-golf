@@ -2,13 +2,16 @@ import Link from "next/link";
 import { Suspense } from "react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getFileUrl } from "@/lib/uploadConfig";
+import { getFileUrl, getBaseUrlFromHeaders } from "@/lib/uploadConfig";
 import { HomeViewportSync } from "./_components/HomeViewportSync";
 import { ScorecardButton } from "./_components/ScorecardLightbox";
 import { DeleteRoundButton } from "./_components/DeleteRoundButton";
 
 type RoundWithScores = Prisma.RoundGetPayload<{
-  include: { scores: { include: { member: true } } };
+  include: {
+    scores: { include: { member: true } };
+    gallery: { select: { id: true } };
+  };
 }>;
 
 const DEFAULT_PER_PAGE = 4;
@@ -55,6 +58,7 @@ export default async function Home(props: {
               member: true,
             },
           },
+          gallery: { select: { id: true } },
         },
       }),
     ]);
@@ -67,35 +71,37 @@ export default async function Home(props: {
   const totalPages = Math.max(1, Math.ceil(totalRounds / perPage));
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
   const memberOrder = members.slice(0, 4).map((m) => m.id);
+  const baseUrl = await getBaseUrlFromHeaders();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 md:space-y-6">
       <Suspense fallback={null}>
         <HomeViewportSync />
       </Suspense>
       <Link
         href="/rounds/new"
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-emerald-500 bg-emerald-600/90 px-4 py-3 text-xs font-semibold text-white shadow-lg shadow-emerald-900/50 transition hover:bg-emerald-500 hover:border-emerald-400"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-emerald-500 bg-emerald-600/90 px-4 py-3 md:py-4 text-xs md:text-sm font-semibold text-white shadow-lg shadow-emerald-900/50 transition hover:bg-emerald-500 hover:border-emerald-400"
       >
         <span aria-hidden>＋</span>
         스코어 입력하기
       </Link>
-      <section className="rounded-2xl border border-emerald-800/60 bg-emerald-950/60 px-4 py-3 shadow-lg shadow-emerald-950/60">
-        <p className="text-[11px] font-medium text-emerald-100/90">총 {totalRounds} 라운드 기록</p>
+      <section className="rounded-2xl border border-emerald-800/60 bg-emerald-950/60 px-4 py-3 md:px-5 md:py-4 shadow-lg shadow-emerald-950/60">
+        <p className="text-[11px] md:text-xs font-medium text-emerald-100/90">총 {totalRounds} 라운드 기록</p>
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-3 md:space-y-4">
         {rounds.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-emerald-700/70 bg-emerald-950/40 px-4 py-10 text-center">
-            <p className="text-sm font-semibold text-emerald-50">
+          <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-emerald-700/70 bg-emerald-950/40 px-4 py-10 md:py-12 text-center">
+            <p className="text-sm md:text-base font-semibold text-emerald-50">
               아직 기록된 라운드가 없습니다.
             </p>
-            <p className="mt-1 text-[11px] text-emerald-200/85">
+            <p className="mt-1 text-[11px] md:text-xs text-emerald-200/85">
               첫 라운드를 기록하면 이곳에 스코어 카드가 나타납니다.
             </p>
           </div>
         ) : (
-          rounds.map((round) => {
+          <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+          {rounds.map((round) => {
             const orderedScores = [...round.scores].sort((a, b) => {
               const ai = memberOrder.indexOf(a.memberId);
               const bi = memberOrder.indexOf(b.memberId);
@@ -113,7 +119,7 @@ export default async function Home(props: {
             return (
               <article
                 key={round.id}
-                className="relative overflow-hidden rounded-2xl border border-emerald-800/70 bg-gradient-to-br from-emerald-950/95 via-emerald-900/95 to-emerald-950/95 p-4 shadow-lg shadow-emerald-950/70"
+                className="relative overflow-hidden rounded-2xl border border-emerald-800/70 bg-gradient-to-br from-emerald-950/95 via-emerald-900/95 to-emerald-950/95 p-4 md:p-5 shadow-lg shadow-emerald-950/70"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -126,7 +132,7 @@ export default async function Home(props: {
                       </h2>
                       {(round as { scorecardImagePath?: string | null }).scorecardImagePath && (
                         <ScorecardButton
-                          imageUrl={getFileUrl((round as { scorecardImagePath: string }).scorecardImagePath)}
+                          imageUrl={getFileUrl((round as { scorecardImagePath: string }).scorecardImagePath, baseUrl)}
                           variant="thumbnail"
                         />
                       )}
@@ -142,6 +148,21 @@ export default async function Home(props: {
                         수정
                       </Link>
                       <DeleteRoundButton roundId={round.id} />
+                      {round.gallery.length > 0 ? (
+                        <Link
+                          href={`/gallery?roundId=${round.id}`}
+                          className="text-[11px] font-medium text-emerald-400 hover:text-emerald-300"
+                        >
+                          사진 {round.gallery.length}장
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/gallery?roundId=${round.id}&upload=1`}
+                          className="text-[11px] font-medium text-emerald-600/80 hover:text-emerald-400"
+                        >
+                          사진 추가
+                        </Link>
+                      )}
                     </div>
                   </div>
                   <div className="text-right space-y-1">
@@ -197,7 +218,8 @@ export default async function Home(props: {
                 )}
               </article>
             );
-          })
+          })}
+          </div>
         )}
       </section>
 

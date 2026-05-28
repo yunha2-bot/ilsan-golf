@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
+import { headers } from "next/headers";
 
 /**
  * 업로드 파일 저장 루트 디렉터리.
@@ -15,13 +16,6 @@ function getUploadRootDir(): string {
   return path.join(process.cwd(), "public", "uploads");
 }
 
-/** 업로드 루트가 public 밑인지(Next 정적 서빙 가능 여부) */
-export function isUploadUnderPublic(): boolean {
-  const root = getUploadRootDir();
-  const publicUploads = path.join(process.cwd(), "public", "uploads");
-  return path.normalize(root) === path.normalize(publicUploads);
-}
-
 /**
  * 저장 시 사용할 디렉터리 절대 경로 (년/월/일 서브디렉터리 생성용)
  * 예: .../uploads/2025/02/11
@@ -32,11 +26,6 @@ export function getUploadDirForDate(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return path.join(root, String(y), m, d);
-}
-
-/** 저장 루트의 절대 경로 (서버에서 파일 쓰기/읽기용) */
-export function getUploadRootPath(): string {
-  return getUploadRootDir();
 }
 
 /**
@@ -59,15 +48,38 @@ export function resolveAbsolutePath(relativePath: string): string {
 }
 
 /**
- * 브라우저에서 접근할 URL (img src 등)
- * 항상 /api/uploads/... 로 서빙 (로컬·서버 동일 동작, standalone에서도 런타임 업로드 파일 표시)
+ * 요청 헤더에서 절대 URL 베이스 추출 (리버스 프록시 시 호스트/프로토콜 반영)
+ * NEXT_PUBLIC_APP_URL 없을 때 사용. async이므로 서버 컴포넌트에서 await 호출.
  */
-export function getFileUrl(relativePath: string): string {
+export async function getBaseUrlFromHeaders(): Promise<string> {
+  const env = process.env.NEXT_PUBLIC_APP_URL;
+  if (env && env.trim()) return env.replace(/\/$/, "").trim();
+  try {
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host");
+    const proto = h.get("x-forwarded-proto");
+    if (host) {
+      const scheme = proto === "https" || proto === "on" ? "https" : "http";
+      return `${scheme}://${host}`;
+    }
+  } catch {
+    // API 등에서 headers() 없을 수 있음
+  }
+  return "";
+}
+
+/**
+ * 브라우저에서 접근할 URL (img src 등)
+ * baseUrl 이 있으면 절대 URL, 없으면 NEXT_PUBLIC_APP_URL, 둘 다 없으면 상대 경로
+ */
+export function getFileUrl(relativePath: string, baseUrl?: string): string {
   const encoded = relativePath
     .split("/")
     .map((s) => encodeURIComponent(s))
     .join("/");
-  return `/api/uploads/${encoded}`;
+  const pathPart = `/api/uploads/${encoded}`;
+  const origin = baseUrl ?? (process.env.NEXT_PUBLIC_APP_URL?.trim() ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "").trim() : "");
+  return origin ? `${origin}${pathPart}` : pathPart;
 }
 
 /** 업로드 루트 및 날짜별 디렉터리 생성 (없으면) */
